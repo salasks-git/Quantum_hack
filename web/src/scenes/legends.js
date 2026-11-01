@@ -68,5 +68,15 @@ export const LEGEND_QUHAMA = [
   { symbol: "particles", text: "Show the order the numbers flow through the network; they carry no extra information." },
   { symbol: "ROC-AUC", text: "How well the model ranks sick above healthy patients across all thresholds: 1 = perfect, 0.5 = coin flip. Below 0.6 the model is not reliable on that dataset." },
   { symbol: "F2 score", text: "A 0–1 score that counts missed sick patients twice as heavily as false alarms." },
+  // Elite Hybrid Architectures part (Streamlit Tab 8 parity)
+  { symbol: "Elite Hybrid Architectures", text: "The three hybrid quantum-classical models Streamlit's Tab 8 compares with the classical baselines: QuHaMA, Sandwich HQNN and Q-CKTA." },
+  { symbol: "Sandwich HQNN", swatch: "#a78bfa", text: "Classical → quantum → classical: a Pre-Net squeezes the measurements into 3 qubit angles, a small quantum circuit returns one number per qubit, and a Post-Net makes the call from both. The circuit's own weights are fixed (0.5); only the two classical networks are trained." },
+  { symbol: "⟨Z⟩ (Z expectation)", text: "The quantum circuit's output for one qubit, between −1 (always measured 1) and +1 (always measured 0). The Bloch arrow's height shows it." },
+  { symbol: "Q-CKTA", swatch: "#f0abfc", text: "Bandwidth-scaled quantum kernel with Centered Kernel-Target Alignment: tries several bandwidths s, keeps the best-aligned one, mixes it with an RBF kernel and trains an SVM on the mix." },
+  { symbol: "bandwidth s", text: "Scales the patient angles before encoding (s = 1 is the unscaled kernel). Too large and every patient looks different from every other (kernel concentration)." },
+  { symbol: "kernel-target alignment", text: "How well a kernel's similarities match the diagnoses (same diagnosis = similar). Higher is better. The sharpening tile is a schematic; the bars are the real alignment for each s." },
+  { symbol: "fusion weights", text: "Q-CKTA's classical/quantum kernel mix, set by the two alignments: w_c = A_c / (A_c + A_q)." },
+  { symbol: "leaderboard / F2", text: "The tab's table: the 3 elite hybrids and the RBF / Linear SVM on the same test patients. Bars are F2 (the clinical target); ★ marks the best F2 (ties share it). Violet bars with gold edges = elite hybrids, cyan = classical." },
+  { symbol: "elite verdicts", text: "This patient's DISEASE/HEALTHY call and probability from each elite model, with ✓/✗ against the true diagnosis. A custom (slider) patient has no precomputed elite predictions." },
 ];
 // --- end QuHaMA scene legend ---

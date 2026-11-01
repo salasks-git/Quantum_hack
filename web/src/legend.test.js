@@ -41,6 +41,12 @@ describe("QuHaMA scene legend", () => {
     }
     for (const it of LEGEND_QUHAMA) { expect(typeof it.symbol).toBe("string"); expect(typeof it.text).toBe("string"); }
   });
+  it("covers the Elite Hybrid Architectures terms", () => {
+    const syms = LEGEND_QUHAMA.map((it) => it.symbol);
+    for (const want of ["Sandwich HQNN", "Q-CKTA", "kernel-target alignment", "leaderboard / F2"]) {
+      expect(syms).toContain(want);
+    }
+  });
 });
 
 describe("mountLegendToggle", () => {
