@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Q-Med 3D Diagnosis Tour</title>
+</head>
+<body>
+<header id="topbar">
+  <div class="brand">Q-Med <span>3D tour</span></div>
+  <label>Disease <select id="disease"></select></label>
+  <label>Patient <select id="patient"></select></label>
+  <nav id="steps">
+    <button id="prev" title="Previous step">Prev</button>
+    <span id="dots">
+      <button class="dot" data-step="1">1</button><button class="dot" data-step="2">2</button><button class="dot" data-step="3">3</button><button class="dot" data-step="4">4</button><button class="dot" data-step="5">5</button>
+    </span>
+    <button id="next" title="Next step">Next</button>
+    <button id="replay">Replay</button>
+    <button id="playall">Play all</button>
+  </nav>
+</header>
+<div id="error" hidden></div>
+<main id="stage"><div id="caption"></div></main>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -5,3 +5,6 @@ __pycache__/
 .DS_Store
 .streamlit/
 .superpowers/
+web/node_modules/
+web/dist/
+web/out/
