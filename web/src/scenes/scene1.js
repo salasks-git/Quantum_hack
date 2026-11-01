@@ -19,7 +19,9 @@ const T = {
 };
 
 const BASE_Y = -0.95; // bar baseline
-const H = 1.55; // world units per height unit
+const H0 = 1.55; // world units per height unit (shrunk per patient if a bar would crowd the frame)
+const MAX_BAR_TOP = 1.7; // tallest standardised bar may reach this y
+const LABEL_CEIL = 2.65; // labels never extend above this y
 const QX = [-2.5, 0, 2.5]; // qubit positions
 const QY = 0.6;
 const SUB = ["₁", "₂", "₃"];
@@ -52,6 +54,7 @@ export default function createScene(ctx) {
     return Math.abs(h) < 0.012 ? (h < 0 ? -0.012 : 0.012) : h; // keep a visible sliver
   });
   const hStd = p.standardized.map((z) => Math.max(0.05, 0.5 + 0.35 * z));
+  const H = Math.min(H0, (MAX_BAR_TOP - BASE_Y) / Math.max(...hStd));
   const spacing = Math.min(0.9, 7.2 / N);
   const width = Math.min(0.42, spacing * 0.62);
   const barX = (i) => (i - (N - 1) / 2) * spacing;
@@ -88,17 +91,16 @@ export default function createScene(ctx) {
     });
     const w = s.scale.x, h = s.scale.y;
     const top = BASE_Y + hStd[i] * H;
-    let y = top + 0.22 + h / 2;
-    // greedy de-overlap: push up until clear of already placed labels
-    let moved = true;
-    while (moved) {
-      moved = false;
-      for (const q of placed) {
-        if (Math.abs(q.x - barX(i)) < (q.w + w) / 2 + 0.04 && Math.abs(q.y - y) < (q.h + h) / 2 + 0.03) {
-          y = q.y + (q.h + h) / 2 + 0.04;
-          moved = true;
-        }
-      }
+    const clash = (yy) => placed.some((q) =>
+      Math.abs(q.x - barX(i)) < (q.w + w) / 2 + 0.04 && Math.abs(q.y - yy) < (q.h + h) / 2 + 0.03);
+    // greedy de-overlap: first free slot going up, but never above LABEL_CEIL;
+    // if the ceiling is hit, fall back to the first free slot going down instead.
+    const y0 = Math.min(top + 0.22 + h / 2, LABEL_CEIL - h / 2);
+    let y = y0;
+    for (let k = 0; clash(y) && y + 0.04 <= LABEL_CEIL - h / 2; k++) y += 0.04;
+    if (clash(y)) {
+      y = y0;
+      while (clash(y) && y > BASE_Y + h / 2) y -= 0.04;
     }
     placed.push({ x: barX(i), y, w, h });
     s.position.set(barX(i), y, 0.05);
@@ -188,7 +190,7 @@ export default function createScene(ctx) {
     scene,
     cameraPos: [0, 2.1, 6.6],
     duration,
-    stops: [T.grow[1], T.std[1], T.merge[1]],
+    stops: [T.grow[1], T.labels[1], T.orbs[1]],
     update(t) {
       const pGrow = ease(seg(t, ...T.grow));
       const pStd = ease(seg(t, ...T.std));

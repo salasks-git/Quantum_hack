@@ -80,3 +80,40 @@ describe("SceneManager holds and pause", () => {
     expect(m.holding).toBeGreaterThan(0);
   });
 });
+
+describe("SceneManager camera drive", () => {
+  const setup = () => {
+    let az = 0;
+    const controls = {
+      target: { set: vi.fn() }, autoRotate: true, autoRotateSpeed: 1,
+      update: vi.fn((dt) => { if (controls.autoRotate && dt) az += controls.autoRotateSpeed * dt * 0.25; }),
+      getAzimuthalAngle: () => az,
+    };
+    const camera = { position: { set: vi.fn() } };
+    let t = 0;
+    const m = new SceneManager({ render: vi.fn() }, camera, controls, { now: () => t * 1000 });
+    const s = { dispose: vi.fn(), update: () => "", scene: {}, cameraPos: [0, 0, 1], duration: 100, stops: [2] };
+    m.show(() => s, {});
+    return { m, controls, adv: (d) => { t += d; m.tick(); }, az: () => az };
+  };
+  it("passes delta seconds and stops rotating while paused or holding", () => {
+    const { m, controls, adv } = setup();
+    adv(0.05);
+    expect(controls.update).toHaveBeenLastCalledWith(0.05);
+    expect(controls.autoRotate).toBe(true);
+    m.setPaused(true); adv(0.05);
+    expect(controls.autoRotate).toBe(false);
+    m.setPaused(false); m.setHolds(true); adv(2.5);
+    expect(m.holding).toBeGreaterThan(0);
+    adv(0.1);
+    expect(controls.autoRotate).toBe(false);
+  });
+  it("swing stays bounded near +-0.5 rad over a long run", () => {
+    const { adv, az } = setup();
+    let lo = 0, hi = 0;
+    for (let i = 0; i < 6000; i++) { adv(1 / 60); lo = Math.min(lo, az()); hi = Math.max(hi, az()); }
+    expect(hi).toBeLessThan(0.55);
+    expect(lo).toBeGreaterThan(-0.55);
+    expect(hi - lo).toBeGreaterThan(0.4);
+  });
+});

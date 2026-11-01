@@ -1,4 +1,5 @@
 export const HOLD_SECONDS = 3;
+export const SWAY = 0.5; // radians either side of a scene's initial azimuth
 
 export class SceneManager {
   constructor(renderer, camera, controls, opts = {}) {
@@ -39,7 +40,11 @@ export class SceneManager {
     const p = this.current.cameraPos;
     this.camera.position.set(p[0], p[1], p[2]);
     if (this.controls && this.controls.target) this.controls.target.set(0, 0, 0);
-    if (this.controls) this.controls.update();
+    if (this.controls) {
+      this.controls.update();
+      this._startAz = this.controls.getAzimuthalAngle ? this.controls.getAzimuthalAngle() : 0;
+      this._lastAz = this._startAz;
+    }
   }
 
   _advance(dt) {
@@ -70,9 +75,23 @@ export class SceneManager {
     if (!this.current) return "";
     if (!this._paused) this._advance(dt);
     const caption = this.current.update(this.elapsed);
-    if (this.controls) this.controls.update();
+    if (this.controls) this._driveCamera(dt);
     this.renderer.render(this.current.scene, this.camera);
     return caption;
+  }
+
+  // Gentle sway: auto-rotate only while the scene is playing (not paused, not holding),
+  // time-based, and reverse direction once the swing leaves +-SWAY rad around the scene's start azimuth.
+  // Manual drag is untouched (no hard azimuth limits).
+  _driveCamera(dt) {
+    const c = this.controls;
+    c.autoRotate = !this._paused && this._holdLeft <= 0;
+    c.update(Math.min(dt, 0.1));
+    if (!c.getAzimuthalAngle) return;
+    const az = c.getAzimuthalAngle();
+    const d = az - this._startAz, delta = az - this._lastAz;
+    if ((d >= SWAY && delta > 0) || (d <= -SWAY && delta < 0)) c.autoRotateSpeed = -c.autoRotateSpeed;
+    this._lastAz = az;
   }
 
   get duration() {

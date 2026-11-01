@@ -24,7 +24,7 @@ const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableZoom = false;
 controls.autoRotate = true;
-controls.autoRotateSpeed = 0.6;
+controls.autoRotateSpeed = 1.0; // time-based (r160): ~0.105 rad/s; SceneManager sways it within +-0.5 rad
 const manager = new SceneManager(renderer, camera, controls);
 manager.setHolds(params.get("holds") === "1");
 const pauseAt = parseFloat(params.get("pauseAt")); // rehearsal/debug: auto-pause at scene time N
@@ -36,6 +36,7 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 addEventListener("resize", resize);
+new ResizeObserver(resize).observe(stage); // top-bar wrap, error banner, window size
 
 function showError(msg) { const e = $("error"); e.textContent = msg; e.hidden = false; }
 function clearError() { $("error").hidden = true; }
@@ -94,7 +95,6 @@ $("playall").addEventListener("click", () => {
 
 function syncPause() {
   const p = manager.paused;
-  controls.autoRotate = !p;
   $("pause").innerHTML = p ? "&#9654; Resume" : "&#9208; Pause";
   $("pause").classList.toggle("on", p);
 }
