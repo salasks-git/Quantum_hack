@@ -30,3 +30,53 @@ describe("SceneManager", () => {
     expect(renderer.render).toHaveBeenCalledWith(a.s.scene, camera);
   });
 });
+
+describe("SceneManager holds and pause", () => {
+  const setup = (holds) => {
+    const { camera, controls, renderer } = stubs();
+    let t = 0;
+    const m = new SceneManager(renderer, camera, controls, { now: () => t * 1000 });
+    const seen = [];
+    const s = { dispose: vi.fn(), update: vi.fn((e) => { seen.push(e); return ""; }), scene: {}, cameraPos: [0, 0, 1], duration: 10, stops: [2, 5] };
+    m.show(() => s, {});
+    m.setHolds(holds);
+    const adv = (d) => { t += d; m.tick(); };
+    return { m, adv, last: () => seen[seen.length - 1] };
+  };
+  it("holds on: time clamps at 2 for 3s then continues", () => {
+    const { m, adv, last } = setup(true);
+    adv(2.5);
+    expect(last()).toBe(2);
+    expect(m.holding).toBeGreaterThan(0);
+    adv(3.0);
+    expect(last()).toBeGreaterThan(2);
+    expect(last()).toBeLessThan(5);
+  });
+  it("holds off: passes through stops", () => {
+    const { m, adv, last } = setup(false);
+    adv(2.5);
+    expect(last()).toBe(2.5);
+    expect(m.holding).toBe(0);
+  });
+  it("pause freezes time and hold countdown", () => {
+    const { m, adv, last } = setup(true);
+    adv(2.2);
+    expect(m.holding).toBeGreaterThan(0);
+    m.setPaused(true);
+    adv(10);
+    expect(last()).toBe(2);
+    expect(m.holding).toBeGreaterThan(0);
+    m.setPaused(false);
+    adv(3.1);
+    expect(last()).toBeGreaterThan(2);
+  });
+  it("show() resets stops", () => {
+    const { m, adv, last } = setup(true);
+    adv(2.5); adv(3.5);
+    expect(last()).toBeGreaterThan(2);
+    m.show(() => ({ dispose() {}, update: () => "", scene: {}, cameraPos: [0, 0, 1], duration: 10, stops: [2, 5] }), {});
+    adv(2.5);
+    expect(m.elapsed).toBe(2);
+    expect(m.holding).toBeGreaterThan(0);
+  });
+});

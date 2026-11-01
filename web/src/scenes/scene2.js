@@ -353,6 +353,7 @@ export default function createScene(ctx) {
     scene,
     cameraPos: [0.6, 1.7, 7.0],
     duration,
+    stops: [T.linVerdict, T.rbfVerdict],
     update(t) {
       const pIn = ease(seg(t, ...T.webIn));
       setOpacity(box, pIn);

@@ -17,3 +17,12 @@ button:hover,select:hover{border-color:var(--accent)}
 #stage canvas{display:block;width:100%;height:100%}
 #caption{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);max-width:min(860px,92%);background:rgba(14,20,38,.88);border:1px solid #2a3350;border-radius:10px;padding:12px 18px;font-size:15px;line-height:1.45;z-index:2}
 #caption:empty{display:none}
+#pause{min-width:92px}
+#pause.on{background:var(--accent);color:#070b16;border-color:var(--accent)}
+.pill{position:relative;cursor:pointer;user-select:none}
+.pill input{position:absolute;opacity:0;pointer-events:none}
+.pill span{border:1px solid #2a3350;border-radius:999px;padding:5px 12px;font-size:13px;color:var(--text);background:var(--bg)}
+.pill:hover span{border-color:var(--accent)}
+.pill input:checked+span{background:var(--accent);color:#070b16;border-color:var(--accent);font-weight:600}
+.pill input:focus-visible+span{outline:2px solid #f0abfc;outline-offset:2px}
+#badge{position:absolute;left:50%;bottom:calc(20px + var(--cap-h,0px) + 10px);transform:translateX(-50%);z-index:3;background:rgba(167,139,250,.92);color:#070b16;font-weight:700;font-size:13px;border-radius:999px;padding:5px 14px;pointer-events:none}

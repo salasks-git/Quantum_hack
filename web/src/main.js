@@ -26,6 +26,8 @@ controls.enableZoom = false;
 controls.autoRotate = true;
 controls.autoRotateSpeed = 0.6;
 const manager = new SceneManager(renderer, camera, controls);
+manager.setHolds(params.get("holds") === "1");
+const pauseAt = parseFloat(params.get("pauseAt")); // rehearsal/debug: auto-pause at scene time N
 
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
@@ -43,7 +45,7 @@ function rebuild() {
   state.advanced = false;
   manager.show(STEP_FACTORIES[state.step - 1], { data: state.data, patient: state.patient });
   document.querySelectorAll(".dot").forEach((d) => d.classList.toggle("active", +d.dataset.step === state.step));
-  history.replaceState(null, "", `?disease=${state.slug}&patient=${state.patient}&step=${state.step}`);
+  history.replaceState(null, "", `?disease=${state.slug}&patient=${state.patient}&step=${state.step}${manager.holds ? "&holds=1" : ""}`);
 }
 
 function fillPatients() {
@@ -90,10 +92,47 @@ $("playall").addEventListener("click", () => {
   if (state.playAll) gotoStep(1);
 });
 
+function syncPause() {
+  const p = manager.paused;
+  controls.autoRotate = !p;
+  $("pause").innerHTML = p ? "&#9654; Resume" : "&#9208; Pause";
+  $("pause").classList.toggle("on", p);
+}
+function togglePause() { manager.togglePause(); syncPause(); }
+$("pause").addEventListener("click", togglePause);
+addEventListener("keydown", (e) => {
+  if (e.code !== "Space" || e.repeat) return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === "SELECT") return;
+  if (tag === "BUTTON" || tag === "INPUT") document.activeElement.blur();
+  e.preventDefault();
+  togglePause();
+});
+$("holds").checked = manager.holds;
+$("holds").addEventListener("change", (e) => {
+  manager.setHolds(e.target.checked);
+  const u = new URL(location.href);
+  if (e.target.checked) u.searchParams.set("holds", "1"); else u.searchParams.delete("holds");
+  history.replaceState(null, "", u);
+});
+
+function updateBadge() {
+  const b = $("badge");
+  let txt = "";
+  if (manager.paused) txt = "\u23F8 Paused";
+  else if (manager.holding > 0) txt = `\u23F8 3s hold \u00B7 ${Math.ceil(manager.holding)}`;
+  if (b.textContent !== txt) b.textContent = txt;
+  b.hidden = !txt;
+  const cap = $("caption");
+  b.style.setProperty("--cap-h", cap.innerHTML ? cap.offsetHeight + "px" : "0px");
+}
+
 function loop() {
   requestAnimationFrame(loop);
+  if (pauseAt >= 0 && !manager.paused && manager.elapsed >= pauseAt) { manager.setPaused(true); syncPause(); }
   const caption = manager.tick();
   if ($("caption").innerHTML !== caption) $("caption").innerHTML = caption;
+  updateBadge();
   if (state.playAll && !state.advanced && manager.elapsed > manager.duration) {
     if (state.step < 5) { state.advanced = true; gotoStep(state.step + 1); }
     else { state.playAll = false; $("playall").classList.remove("on"); }

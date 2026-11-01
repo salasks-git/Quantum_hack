@@ -188,6 +188,7 @@ export default function createScene(ctx) {
     scene,
     cameraPos: [0, 2.1, 6.6],
     duration,
+    stops: [T.grow[1], T.std[1], T.merge[1]],
     update(t) {
       const pGrow = ease(seg(t, ...T.grow));
       const pStd = ease(seg(t, ...T.std));

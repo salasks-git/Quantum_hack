@@ -251,6 +251,7 @@ export default function createScene(ctx) {
     scene,
     cameraPos: [0.1, 0.45, 6.9],
     duration,
+    stops: [T.verdict],
     update(t) {
       const pIn = ease(seg(t, ...T.intro));
       setOpacity(knobs, pIn);

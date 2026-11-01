@@ -97,6 +97,7 @@ export default function createScene(ctx) {
     scene,
     cameraPos: [0, 1.4, 7.6],
     duration,
+    stops: [0,1,2,3].map((i) => RISE0 + i * STAGGER + RISE),
     update(t) {
       const doneFlags = cols.map((c) => {
         const g = ease(seg(t, c.start, c.start + RISE));
