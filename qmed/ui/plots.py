@@ -113,3 +113,94 @@ def pareto_frontier_scatter(results: dict, y_test):
     ax.legend(loc="lower left", fontsize=8)
     fig.tight_layout()
     return fig
+
+
+# --- Kernel Bandwidth Lab -------------------------------------------------------------
+ACC_COLOR = "#2a78d6"
+AUC_COLOR = "#eb6834"
+MARKER_COLOR = "#52514e"
+
+
+def kernel_small_multiples(kernels: dict, y, titles: dict):
+    """Side-by-side Gram matrices on one shared [0, 1] color scale.
+
+    Patients are sorted by diagnosis (healthy first) so a useful kernel shows two
+    bright diagonal blocks; the white lines mark the class boundary.
+    """
+    order = np.argsort(y, kind="stable")
+    boundary = int(np.sum(np.asarray(y) == 0))
+    fig, axes = plt.subplots(1, len(kernels), figsize=(4.2 * len(kernels), 3.9), constrained_layout=True)
+    axes = np.atleast_1d(axes)
+    for ax, (s, K) in zip(axes, kernels.items()):
+        im = ax.imshow(K[np.ix_(order, order)], cmap="viridis", vmin=0, vmax=1, interpolation="nearest")
+        ax.axhline(boundary - 0.5, color="white", linewidth=1)
+        ax.axvline(boundary - 0.5, color="white", linewidth=1)
+        ax.set_title(titles[s], fontsize=10)
+        ax.set_xticks([boundary / 2, (boundary + len(y)) / 2], ["Healthy", "Disease"], fontsize=8)
+        ax.set_yticks([boundary / 2, (boundary + len(y)) / 2], ["Healthy", "Disease"], fontsize=8, rotation=90, va="center")
+        ax.tick_params(length=0)
+    fig.colorbar(im, ax=axes, shrink=0.85, label="Kernel value K(x, x′)")
+    return fig
+
+
+def _mark_current(ax, current_s) -> None:
+    ax.axvline(current_s, color=MARKER_COLOR, linestyle=":", linewidth=1.5)
+    ax.annotate(f"your s = {current_s:g}", (current_s, 1.0), xycoords=("data", "axes fraction"),
+                xytext=(4, -12), textcoords="offset points", fontsize=8, color=MARKER_COLOR)
+
+
+def _log_bandwidth_axis(ax, bandwidths) -> None:
+    ax.set_xscale("log")
+    ax.set_xticks(bandwidths, [f"{s:g}" for s in bandwidths])
+    ax.minorticks_off()
+    ax.set_xlabel("Kernel bandwidth s (log scale)")
+    ax.grid(True, alpha=0.3)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+
+
+def bandwidth_scores(table, rbf: dict, current_s: float):
+    """CV accuracy and ROC-AUC of QSVC vs bandwidth, RBF SVM as dashed reference lines."""
+    s = table["bandwidth"].to_numpy()
+    fig, ax = plt.subplots(figsize=(6.4, 4.4))
+    for col, color, name in [("accuracy", ACC_COLOR, "Accuracy"), ("roc_auc", AUC_COLOR, "ROC-AUC")]:
+        ax.plot(s, table[col], marker="o", markersize=6, linewidth=2, color=color, label=f"QSVC {name}")
+        ax.axhline(rbf[col], color=color, linestyle="--", linewidth=1.2, alpha=0.8, label=f"Classical RBF {name}")
+        ax.annotate(f"RBF {name} {rbf[col]:.2f}", (s.max(), rbf[col]), xytext=(0, 3), textcoords="offset points",
+                    fontsize=8, ha="right", va="bottom", color="#333333")
+    _mark_current(ax, current_s)
+    _log_bandwidth_axis(ax, s)
+    ax.set_ylabel("Mean over CV folds")
+    lo = min(table["accuracy"].min(), table["roc_auc"].min(), rbf["accuracy"], rbf["roc_auc"])
+    ax.set_ylim(max(0.0, lo - 0.08), 1.0)
+    ax.set_title("QSVC Cross-Validated Score vs Kernel Bandwidth")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.17), fontsize=8, ncol=2, frameon=False)
+    fig.tight_layout()
+    return fig
+
+
+def bandwidth_diagnostics(table, current_s: float):
+    """Two panels (separate y-axes, no twin axis): kernel concentration and kernel-target alignment."""
+    s = table["bandwidth"].to_numpy()
+    mean = table["kernel_mean"].to_numpy()
+    std = np.sqrt(table["kernel_var"].to_numpy())
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 3.6))
+
+    ax1.fill_between(s, np.clip(mean - std, 0, 1), np.clip(mean + std, 0, 1), color=ACC_COLOR, alpha=0.18,
+                     linewidth=0, label="± 1 std (spread)")
+    ax1.plot(s, mean, marker="o", markersize=6, linewidth=2, color=ACC_COLOR, label="Off-diagonal mean")
+    ax1.set_ylim(0, 1.02)
+    ax1.set_ylabel("Kernel value between two patients")
+    ax1.set_title("Kernel Concentration", fontsize=10)
+    ax1.legend(loc="upper right", fontsize=8, frameon=False)
+
+    ax2.plot(s, table["alignment"], marker="o", markersize=6, linewidth=2, color=ACC_COLOR)
+    ax2.set_ylim(0, max(0.3, table["alignment"].max() * 1.25))
+    ax2.set_ylabel("Centered alignment with labels")
+    ax2.set_title("Kernel-Target Alignment (higher = better)", fontsize=10)
+
+    for ax in (ax1, ax2):
+        _mark_current(ax, current_s)
+        _log_bandwidth_axis(ax, s)
+    fig.tight_layout()
+    return fig

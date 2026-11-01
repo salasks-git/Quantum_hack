@@ -9,7 +9,9 @@ from qmed.circuits import build_ansatz, build_feature_map
 from qmed.config import DATASETS
 from qmed.data import PreparedData, prepare_data
 from qmed.models import train_all_models
-from qmed.ui import tab_benchmarks, tab_circuits, tab_dataset, tab_ibm_hardware, tab_profiler, tab_simulator
+from qmed.ui import (
+    tab_bandwidth, tab_benchmarks, tab_circuits, tab_dataset, tab_ibm_hardware, tab_profiler, tab_simulator,
+)
 from qmed.ui.sidebar import render_sidebar
 
 st.set_page_config(page_title="Q-Med: Hybrid Quantum Disease Classifier", layout="wide")
@@ -30,7 +32,8 @@ def cached_prepare(dataset_label: str, n_samples: int, n_qubits: int) -> Prepare
 
 
 @st.cache_resource
-def cached_train(X_train_q, y_train, X_test_q, feature_map_name, n_qubits, reps, entanglement, vqc_iter):
+def cached_train(X_train_q, y_train, X_test_q, feature_map_name, n_qubits, reps, entanglement, vqc_iter,
+                 kernel_bandwidth):
     # Circuits are rebuilt here from plain settings (rather than passed in) so every
     # circuit setting is part of the cache key and stale models can't be reused.
     return train_all_models(
@@ -38,6 +41,7 @@ def cached_train(X_train_q, y_train, X_test_q, feature_map_name, n_qubits, reps,
         feature_map=build_feature_map(feature_map_name, n_qubits, reps, entanglement),
         ansatz=build_ansatz(n_qubits, reps, entanglement),
         vqc_iter=vqc_iter,
+        kernel_bandwidth=kernel_bandwidth,
     )
 
 
@@ -50,15 +54,17 @@ with st.spinner(f"Simulating {cfg.n_qubits}-Qubit Hilbert Space on {cfg.dataset_
     results = cached_train(
         data.X_train_q, data.y_train, data.X_test_q,
         cfg.feature_map_name, cfg.n_qubits, cfg.reps, cfg.entanglement, cfg.vqc_iter,
+        cfg.kernel_bandwidth,
     )
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📊 1. Dataset & Quantum Preprocessing",
     "⚛️ 2. Quantum Circuits & Kernel Matrix",
     "🏆 3. Classical vs Quantum Benchmarks",
     "⏱️ 4. Execution Time & Quantum Latency Profiler",
     "🔬 5. IBM Quantum Hardware Latency (Real QPU)",
     "🩺 6. Live Patient Diagnostic Simulator",
+    "🎚️ 7. Kernel Bandwidth Lab",
 ])
 with tab1:
     tab_dataset.render(cfg, data)
@@ -72,3 +78,5 @@ with tab5:
     tab_ibm_hardware.render(cfg, data, feature_map, ansatz, results)
 with tab6:
     tab_simulator.render(cfg, data, results)
+with tab7:
+    tab_bandwidth.render(cfg, data)

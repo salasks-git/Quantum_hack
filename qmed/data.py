@@ -43,27 +43,39 @@ def load_dataset(csv_path: Path):
     return df, X, y, feature_names
 
 
-def prepare_data(csv_path: Path, max_samples: int, n_qubits: int) -> PreparedData:
-    """Subsample, split 75/25 (stratified), and map each patient to n_qubits angles in [0, pi]."""
-    t_start = time.time()
-    df, X, y, feature_names = load_dataset(csv_path)
-
+def subsample(X, y, max_samples: int):
+    """Stratified subsample of at most ``max_samples`` patients (deterministic)."""
     if len(X) > max_samples:
         X, _, y, _ = train_test_split(
             X, y, train_size=max_samples, random_state=RANDOM_STATE, stratify=y
         )
+    return X, y
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
-    )
 
-    # Fit on training data only; test data reuses the same transforms.
+def angle_transform(X_train, X_test, n_qubits: int):
+    """Standardize -> PCA(n_qubits) -> [0, pi] angles, fit on X_train only (no test leakage).
+
+    Returns (X_train_q, X_test_q, fitted PCA).
+    """
     std_scaler = StandardScaler()
     pca = PCA(n_components=n_qubits, random_state=RANDOM_STATE)
     angle_scaler = MinMaxScaler(feature_range=(0, np.pi))
 
     X_train_q = angle_scaler.fit_transform(pca.fit_transform(std_scaler.fit_transform(X_train)))
     X_test_q = angle_scaler.transform(pca.transform(std_scaler.transform(X_test)))
+    return X_train_q, X_test_q, pca
+
+
+def prepare_data(csv_path: Path, max_samples: int, n_qubits: int) -> PreparedData:
+    """Subsample, split 75/25 (stratified), and map each patient to n_qubits angles in [0, pi]."""
+    t_start = time.time()
+    df, X, y, feature_names = load_dataset(csv_path)
+    X, y = subsample(X, y, max_samples)
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
+    )
+    X_train_q, X_test_q, pca = angle_transform(X_train, X_test, n_qubits)
 
     return PreparedData(
         df=df, feature_names=feature_names,
