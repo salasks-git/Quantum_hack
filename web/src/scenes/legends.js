@@ -54,3 +54,19 @@ export const LEGEND_5 = [
   { symbol: "missed diagnoses", text: "Sick test patients the model called healthy (false negatives). The most dangerous error in screening." },
   { symbol: "🏆 Clinical leader", text: "The model with the best F2 on this disease's 25 test patients." },
 ];
+
+// --- QuHaMA scene legend ---
+export const LEGEND_QUHAMA = [
+  { symbol: "QuHaMA", text: "Quantum-Hybrid Adaptive Multi-branch Architecture: a small neural network with a classical branch and a quantum branch, blended per patient." },
+  { symbol: "inputs (σ)", swatch: "#38bdf8", text: "The patient's standardised measurements (σ units). Brighter = further from the average patient. For many features only the 12 most extreme are drawn; the encoder still reads all of them." },
+  { symbol: "encoder", swatch: "#38bdf8", text: "A small neural network (Linear → BatchNorm → ReLU → Linear → Tanh) that compresses all measurements into a few numbers." },
+  { symbol: "latent space (k = qubits)", text: "The encoder's output z: k = 3 numbers between −1 and +1, one per qubit. Brightness = |z|." },
+  { symbol: "classical head", swatch: "#38bdf8", text: "A tiny neural network that reads z and gives the classical disease probability P_c." },
+  { symbol: "quantum branch", swatch: "#a78bfa", text: "z is turned into qubit angles θ = (z+1)·π/2 (0 to π) and classified by a quantum-kernel SVM (QSVC, ZZFeatureMap) on 3 qubits, giving P_q. The Bloch arrows show only the first encoding layer." },
+  { symbol: "gating network (per-patient adaptive weights)", text: "A third small network that looks at z, P_c and P_q and decides, for this patient, how much to trust each branch (the two weights add up to 100%)." },
+  { symbol: "blended prob", text: "P = w_classical × P_c + w_quantum × P_q. At or above 50% the verdict is disease." },
+  { symbol: "particles", text: "Show the order the numbers flow through the network; they carry no extra information." },
+  { symbol: "ROC-AUC", text: "How well the model ranks sick above healthy patients across all thresholds: 1 = perfect, 0.5 = coin flip. Below 0.6 the model is not reliable on that dataset." },
+  { symbol: "F2 score", text: "A 0–1 score that counts missed sick patients twice as heavily as false alarms." },
+];
+// --- end QuHaMA scene legend ---

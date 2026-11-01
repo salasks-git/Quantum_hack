@@ -11,8 +11,13 @@ import scene2 from "./scenes/scene2.js";
 import scene3 from "./scenes/scene3.js";
 import scene4 from "./scenes/scene4.js";
 import scene5 from "./scenes/scene5.js";
+import sceneQuhama from "./scenes/sceneQuhama.js";
 
-const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5];
+// --- step table: append scenes here. Step count, dots, Prev/Next bounds, URL `step` range and
+// play-all all derive from its length (web/scripts/smoke.sh parses this line for its step range). ---
+const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5, sceneQuhama];
+const N_STEPS = STEP_FACTORIES.length;
+// --- end step table ---
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -107,7 +112,7 @@ const allPatients = mountAllPatients($("all-btn"), $("allpatients"), {
 // --- end All patients overlay ---
 
 function gotoStep(n) {
-  state.step = Math.min(5, Math.max(1, n));
+  state.step = Math.min(N_STEPS, Math.max(1, n));
   rebuild();
 }
 
@@ -116,6 +121,8 @@ $("patient").addEventListener("change", (e) => { state.patient = +e.target.value
 $("prev").addEventListener("click", () => gotoStep(state.step - 1));
 $("next").addEventListener("click", () => gotoStep(state.step + 1));
 $("replay").addEventListener("click", rebuild);
+// step dots are generated from the step table (replaces the static dots in index.html)
+$("dots").innerHTML = STEP_FACTORIES.map((_, i) => `<button class="dot" data-step="${i + 1}">${i + 1}</button>`).join("");
 document.querySelectorAll(".dot").forEach((d) => d.addEventListener("click", () => gotoStep(+d.dataset.step)));
 $("playall").addEventListener("click", () => {
   state.playAll = !state.playAll;
@@ -163,14 +170,14 @@ function loop() {
   if ($("caption").innerHTML !== caption) $("caption").innerHTML = caption;
   updateBadge();
   if (state.playAll && !state.advanced && manager.elapsed > manager.duration) {
-    if (state.step < 5) { state.advanced = true; gotoStep(state.step + 1); }
+    if (state.step < N_STEPS) { state.advanced = true; gotoStep(state.step + 1); }
     else { state.playAll = false; $("playall").classList.remove("on"); }
   }
 }
 
 async function init() {
   resize();
-  state.step = Math.min(5, Math.max(1, parseInt(params.get("step")) || 1));
+  state.step = Math.min(N_STEPS, Math.max(1, parseInt(params.get("step")) || 1));
   state.patient = Math.max(0, parseInt(params.get("patient")) || 0);
   try {
     state.index = await loadIndex();

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderLegend, mountLegendToggle } from "./legend.js";
 import { LEGEND_1, LEGEND_2, LEGEND_3, LEGEND_4, LEGEND_5 } from "./scenes/legends.js";
+import { LEGEND_QUHAMA } from "./scenes/legends.js";
 
 const fakeEl = () => ({ innerHTML: "", hidden: false, _l: {}, classList: { toggle() {} }, setAttribute() {}, addEventListener(n, f) { this._l[n] = f; } });
 
@@ -29,6 +30,16 @@ describe("scene legends (scenes 1-5)", () => {
   it.each([[LEGEND_1], [LEGEND_2], [LEGEND_3], [LEGEND_4], [LEGEND_5]])("is non-empty with string symbol/text", (L) => {
     expect(L.length).toBeGreaterThan(0);
     for (const it of L) { expect(typeof it.symbol).toBe("string"); expect(typeof it.text).toBe("string"); }
+  });
+});
+
+describe("QuHaMA scene legend", () => {
+  it("covers the architecture terms with string symbol/text", () => {
+    const syms = LEGEND_QUHAMA.map((it) => it.symbol);
+    for (const want of ["encoder", "latent space (k = qubits)", "classical head", "quantum branch", "gating network (per-patient adaptive weights)", "blended prob"]) {
+      expect(syms).toContain(want);
+    }
+    for (const it of LEGEND_QUHAMA) { expect(typeof it.symbol).toBe("string"); expect(typeof it.text).toBe("string"); }
   });
 });
 
