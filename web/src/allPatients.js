@@ -1,4 +1,5 @@
 import { MODEL_KEYS, MODEL_LABELS, verdictFor } from "./verdict.js";
+import { modelMetrics } from "./metrics.js";
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -51,9 +52,33 @@ export function renderPredictionTable(container, table, { currentPatient = -1, o
   });
 }
 
+// Streamlit-parity benchmark table + one 2x2 confusion matrix per model.
+export function renderMetrics(container, test, keys = MODEL_KEYS) {
+  const ms = keys.map((k) => ({ k, m: modelMetrics(test, k) }));
+  const f3 = (v) => v.toFixed(3);
+  const cols = [["F2 🎯", (m) => f3(m.f2)], ["Recall", (m) => f3(m.recall)], ["Missed", (m) => String(m.missed)],
+    ["F1", (m) => f3(m.f1)], ["Precision", (m) => f3(m.precision)], ["Accuracy", (m) => `${(m.accuracy * 100).toFixed(0)}%`],
+    ["ROC-AUC", (m) => (m.rocAuc == null ? "—" : f3(m.rocAuc))]];
+  const head = `<tr><th>Model</th>${cols.map(([h]) => `<th>${h}</th>`).join("")}</tr>`;
+  const rows = ms.map(({ k, m }) => `<tr><td>${esc(MODEL_LABELS[k] || k)}</td>${cols.map(([, f]) => `<td>${f(m)}</td>`).join("")}</tr>`).join("");
+  const cell = (n, max, cls) => `<td class="${cls}" style="--t:${max ? (n / max).toFixed(2) : 0}">${n}</td>`;
+  const cms = ms.map(({ k, m }) => {
+    const { tp, fp, fn, tn } = m.cm, max = Math.max(tp, fp, fn, tn);
+    return `<div class="ap-cm"><div class="ap-cm-t">${esc(MODEL_LABELS[k] || k)}</div><table>`
+      + `<tr><th></th><th>Pred Healthy</th><th>Pred Disease</th></tr>`
+      + `<tr><th>Actual Healthy</th>${cell(tn, max, "ok")}${cell(fp, max, "bad")}</tr>`
+      + `<tr><th>Actual Disease</th>${cell(fn, max, "bad")}${cell(tp, max, "ok")}</tr></table></div>`;
+  }).join("");
+  container.innerHTML = `<div class="ap-mt">📊 Metrics · ${test.length} test patients</div>`
+    + `<table class="ap-metrics"><thead>${head}</thead><tbody>${rows}</tbody></table>`
+    + `<div class="ap-mt">Confusion matrices · Actual × Predicted</div><div class="ap-cms">${cms}</div>`;
+}
+
 // Overlay controller. panel contains .ap-title, .ap-close, .ap-body (built here).
 export function mountAllPatients(button, panel, { getData, getPatient, onSelect }) {
   panel.innerHTML = `<div class="ap-head"><span class="ap-title"></span><button class="ap-close" title="Close (Esc)" aria-label="Close">✕</button></div><div class="ap-body"></div>`;
+  const metricsBox = document.createElement("div");
+  metricsBox.className = "ap-metrics-box";
   const title = panel.querySelector(".ap-title");
   const body = panel.querySelector(".ap-body");
   let open = false;
@@ -63,6 +88,8 @@ export function mountAllPatients(button, panel, { getData, getPatient, onSelect 
     const t = buildPredictionTable(data);
     title.textContent = `All test patients · ${data.label} · ${t.rows.length} patients the models never saw`;
     renderPredictionTable(body, t, { currentPatient: getPatient(), onSelect: (i) => { setOpen(false); onSelect(i); } });
+    renderMetrics(metricsBox, data.test || []);
+    body.appendChild(metricsBox);
   };
   function setOpen(v) {
     open = !!v;

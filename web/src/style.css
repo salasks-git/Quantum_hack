@@ -52,4 +52,17 @@ button:hover,select:hover{border-color:var(--accent)}
 .ap-warn{color:#fbbf24;cursor:help}
 #all-btn.on{background:var(--accent);color:#070b16;border-color:var(--accent)}
 @media (max-width:899px){#allpatients{width:100%;top:0;left:0;transform:none;max-height:100%;border-radius:0}}
+.ap-metrics-box{padding:10px 4px 4px}
+.ap-mt{font-weight:700;color:var(--accent);margin:8px 0 6px;font-size:13px}
+.ap-metrics{border-collapse:collapse}
+.ap-metrics th,.ap-metrics td{padding:3px 12px;text-align:right;border-bottom:1px solid #1e293b;white-space:nowrap}
+.ap-metrics th:first-child,.ap-metrics td:first-child{text-align:left}
+.ap-metrics th{color:var(--muted);font-weight:600}
+.ap-cms{display:flex;flex-wrap:wrap;gap:14px}
+.ap-cm-t{font-weight:600;margin-bottom:3px}
+.ap-cm table{border-collapse:separate;border-spacing:2px}
+.ap-cm th{font-size:10px;color:var(--muted);font-weight:600;padding:2px 4px;text-align:center}
+.ap-cm td{width:62px;height:34px;text-align:center;font-weight:700;font-size:14px;border-radius:4px}
+.ap-cm td.ok{background:rgba(74,222,128,calc(.08 + var(--t)*.5))}
+.ap-cm td.bad{background:rgba(251,113,133,calc(.08 + var(--t)*.5))}
 /* --- end All patients overlay --- */

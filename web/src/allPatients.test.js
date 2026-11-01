@@ -49,3 +49,21 @@ describe("renderPredictionTable", () => {
     expect(onSelect).toHaveBeenCalledWith(7);
   });
 });
+
+import { renderMetrics } from "./allPatients.js";
+describe("renderMetrics", () => {
+  it("renders table rows, formats, and a matrix per model", () => {
+    const d = JSON.parse(readFileSync("public/data/heart_disease_statlog.json", "utf8"));
+    const c = document.createElement("div");
+    renderMetrics(c, d.test);
+    expect(c.querySelectorAll(".ap-metrics tbody tr").length).toBe(5);
+    expect(c.querySelectorAll(".ap-cm").length).toBe(5);
+    expect(c.querySelector(".ap-metrics tbody tr:last-child").textContent).toContain("92%");
+    expect(c.querySelector(".ap-metrics tbody tr:last-child").textContent).toContain("0.849");
+  });
+  it("shows an em dash for a null AUC", () => {
+    const c = document.createElement("div");
+    renderMetrics(c, [{ label: 1, models: { linear: { pred: 1, prob: 0.9 } } }], ["linear"]);
+    expect(c.querySelector(".ap-metrics tbody tr").lastElementChild.textContent).toBe("—");
+  });
+});
