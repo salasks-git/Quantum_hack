@@ -14,15 +14,20 @@
     <button id="prev" title="Previous step">Prev</button>
     <span id="dots"><!-- one .dot per step, built by main.js from STEP_FACTORIES --></span>
     <button id="next" title="Next step">Next</button>
-    <button id="replay">Replay</button>
+    <button id="pause" title="Pause / resume (Space)">&#9208; Pause</button>
     <button id="playall">Play all</button>
+    <button id="menu-btn" title="More" aria-label="Menu">&#9776;</button>
+  </nav>
+  <!-- existing feature buttons: kept (modules bind to them) but hidden; the menu rows click them -->
+  <div id="legacy-btns" hidden>
+    <button id="replay">Replay</button>
     <button id="legend-btn" title="Show / hide legend (L)" aria-pressed="true">&#9432; Legend</button>
     <button id="all-btn" title="All test patients (A)" aria-pressed="false">&#128101; All patients</button>
     <button id="dataset-btn" title="Dataset explorer (D)" aria-pressed="false">&#128203; Dataset</button>
     <button id="settings-btn" title="Settings: retrain with your own settings" aria-pressed="false">&#9881;&#65039; Settings</button>
-    <button id="custom-btn" title="Custom patient (C)" aria-pressed="false">&#129514; Custom patient</button><!-- 22c -->
-    <button id="pause" title="Pause / resume (Space)">&#9208; Pause</button>
-  </nav>
+    <button id="custom-btn" title="Custom patient (C)" aria-pressed="false">&#129514; Custom patient</button>
+  </div>
+  <div id="menu-panel" hidden></div>
 </header>
 <div id="error" hidden></div>
 <main id="stage"><div id="legend" hidden></div><div id="custom-badge" hidden></div><div id="badge" hidden></div><div id="caption"></div><div id="allpatients" hidden></div><div id="dataset-overlay" hidden></div><div id="qpu-panel" hidden aria-live="polite"></div><div id="custom-panel" hidden></div><aside id="settings-drawer" hidden></aside><div id="toast" hidden></div></main>

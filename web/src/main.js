@@ -14,6 +14,7 @@ import scene4 from "./scenes/scene4.js";
 import scene5 from "./scenes/scene5.js";
 import scene6 from "./scenes/scene6.js";
 import { mountQpuPanel } from "./qpuPanel.js";
+import { mountMenu } from "./menu.js";
 import sceneBandwidth from "./scenes/sceneBandwidth.js";
 import sceneQuhama from "./scenes/sceneQuhama.js";
 import { mountCustomPatient, withCustomPatient, CUSTOM_LABEL, MSG as CUSTOM_MSG } from "./customPatient.js"; // 22c
@@ -238,6 +239,20 @@ addEventListener("keydown", (e) => {
   e.preventDefault();
   togglePause();
 });
+
+// --- top-bar hamburger menu (Task 28): rows click the existing (hidden) buttons ---
+const menuRow = (icon, label, hint, id) => ({ icon, label, hint, onSelect: () => $(id).click(), isOn: () => $(id).classList.contains("on") || $(id).getAttribute("aria-pressed") === "true" });
+mountMenu({
+  button: $("menu-btn"), panel: $("menu-panel"),
+  items: [
+    menuRow("\u24D8", "Legend", "L", "legend-btn"), menuRow("\u{1F465}", "All patients", "A", "all-btn"),
+    menuRow("\u{1F4CB}", "Dataset", "D", "dataset-btn"), menuRow("\u2699\uFE0F", "Settings", "", "settings-btn"),
+    menuRow("\u{1F9EA}", "Custom patient", "C", "custom-btn"), { icon: "\u21BB", label: "Replay", hint: "", onSelect: () => $("replay").click() },
+  ],
+  shortcuts: [["Space", "pause / resume"], ["L", "legend"], ["A", "all patients"], ["D", "dataset"], ["C", "custom patient"], ["Esc", "close panel / menu"]],
+  getStatus: () => ($("custom-badge").hidden ? [] : ["Custom run active"]),
+});
+// --- end menu ---
 
 function updateBadge() {
   const b = $("badge");
