@@ -7,6 +7,7 @@ const BETA2 = 4; // beta = 2
 export function clinicalScores(test, key) {
   let tp = 0, fp = 0, fn = 0, tn = 0;
   for (const p of test) {
+    if (p.label == null) continue; // custom patient: unknown label, never scored
     const sick = p.label === 1;
     const flagged = p.models[key].pred === 1;
     if (sick && flagged) tp++;

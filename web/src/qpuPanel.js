@@ -35,6 +35,7 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
   const jobKey = new Map(); // job_id -> key (only jobs this page submitted)
   const results = new Map(); // key -> final result + {slug, patient, cached}
   const st = { phase: "hidden", health: null, messages: [], job: null, status: null, foreign: false, error: "" };
+  const bk = { phase: "idle", rows: [], error: "" }; // IBM backend list (Task 22c): fetched only on an explicit click
 
   const emit = () => onChange(view());
 
@@ -222,6 +223,18 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
     }
   }
 
+  // Lists IBM backends and queues (contacts IBM, submits nothing). Only ever called from a button click.
+  async function showBackends() {
+    if (bk.phase === "loading") return;
+    bk.phase = "loading"; bk.error = "";
+    emit();
+    let r;
+    try { r = await client.backends(); } catch (e) { r = { ok: false, error: String((e && e.message) || e) }; }
+    if (r && r.ok) { bk.phase = "ok"; bk.rows = r.rows || []; }
+    else { bk.phase = "error"; bk.error = (r && r.error) || "Could not list backends."; }
+    emit();
+  }
+
   function recheck() {
     if (!active || !(st.phase === "failed" || st.phase === "unavailable")) return;
     checkHealth();
@@ -238,10 +251,11 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
       health: st.health, messages: st.messages.slice(), canRun: canRun(),
       job: st.job, status: st.status, foreign: st.foreign, error: st.error,
       result: st.phase === "done" ? result : null, partner, kPair,
+      backends: { phase: bk.phase, rows: bk.rows.slice(), error: bk.error },
     };
   }
 
-  return { activate, deactivate, requestRun, cancel, confirmRun, recheck, view };
+  return { activate, deactivate, requestRun, cancel, confirmRun, recheck, showBackends, view };
 }
 
 // ------------------------------------------------------------------ rendering
@@ -267,6 +281,19 @@ const STAGE_OF = (status) => {
   if (status === "DONE") return 2;
   return 0; // INITIALIZING / VALIDATING / QUEUED
 };
+
+export function renderBackends(b) {
+  if (!b || b.phase === "idle" || !b.phase) {
+    return `<div class="qp-bk"><button class="qp-link" data-act="backends">📡 Show IBM backends &amp; queues</button><div class="qp-note">Listing uses no QPU time</div></div>`;
+  }
+  if (b.phase === "loading") return `<div class="qp-bk"><div class="qp-msg qp-dim"><span class="qp-spin"></span>Asking IBM for backends…</div></div>`;
+  if (b.phase === "error") {
+    return `<div class="qp-bk"><div class="qp-msg qp-err">${msgHtml(b.error || "Could not list backends.")}</div><button class="qp-link" data-act="backends">Try again</button></div>`;
+  }
+  const rows = (b.rows || []).map((r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.num_qubits)}</td><td>${r.operational ? "yes" : "no"}</td><td>${r.pending_jobs == null ? "–" : esc(r.pending_jobs)}</td></tr>`).join("");
+  return `<div class="qp-bk"><table class="qp-bk-t"><thead><tr><th>Backend</th><th>Qubits</th><th>Operational</th><th>Queue</th></tr></thead><tbody>${rows}</tbody></table>`
+    + `<button class="qp-link" data-act="backends">Refresh</button><div class="qp-note">Sorted by queue · Listing uses no QPU time</div></div>`;
+}
 
 export function renderQpuPanel(v, nowS = Date.now() / 1000) {
   if (!v || v.phase === "hidden") return "";
@@ -335,7 +362,7 @@ export function renderQpuPanel(v, nowS = Date.now() / 1000) {
     default:
       break;
   }
-  return html;
+  return html + renderBackends(v.backends);
 }
 
 /** Wire a panel element: render on every change, delegate clicks, tick the elapsed clock while running. */
@@ -356,6 +383,7 @@ export function mountQpuPanel(el, { client = qpuClient, intervalMs = 5000 } = {}
     else if (act === "cancel") ctl.cancel();
     else if (act === "confirm") ctl.confirmRun();
     else if (act === "recheck") ctl.recheck();
+    else if (act === "backends") ctl.showBackends();
   });
   el.addEventListener("keydown", (e) => { if (e.key === "Escape") ctl.cancel(); });
   setInterval(() => { if (last && last.phase === "running") draw(ctl.view()); }, 1000);

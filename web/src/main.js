@@ -16,6 +16,7 @@ import scene6 from "./scenes/scene6.js";
 import { mountQpuPanel } from "./qpuPanel.js";
 import sceneBandwidth from "./scenes/sceneBandwidth.js";
 import sceneQuhama from "./scenes/sceneQuhama.js";
+import { mountCustomPatient, withCustomPatient, CUSTOM_LABEL, MSG as CUSTOM_MSG } from "./customPatient.js"; // 22c
 
 // Step table: step n (1-based) = STEP_FACTORIES[n - 1]. Append new scenes here; the step count,
 // the step dots, Prev/Next bounds, the URL ?step= range and web/scripts/smoke.sh all derive from it.
@@ -26,7 +27,7 @@ const QPU_STEP = 6; // scene 6 shows the live-run panel
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-const state = { index: [], slug: null, data: null, patient: 0, step: 1, playAll: false, advanced: false };
+const state = { index: [], slug: null, base: null, realPatient: 0, data: null, patient: 0, step: 1, playAll: false, advanced: false };
 
 const stage = $("stage");
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -76,7 +77,11 @@ const qpuPanel = mountQpuPanel($("qpu-panel"));
 function updateQpuPanel() {
   const on = state.step === QPU_STEP && !!state.data;
   stage.classList.toggle("qpu-on", on);
-  if (on) {
+  if (on && state.data.test[state.patient].label == null) { // 22c: custom patient -> no live QPU run
+    qpuPanel.deactivate();
+    $("qpu-panel").hidden = false;
+    $("qpu-panel").innerHTML = `<div class="qp-head"><span>Real IBM QPU · free tier</span></div><div class="qp-msg qp-warn">${CUSTOM_MSG.qpuDisabled}</div>`;
+  } else if (on) {
     qpuPanel.activate({ slug: state.slug, patient: state.patient, kRow: state.data.qsvc.kernel_test[state.patient] });
   } else {
     qpuPanel.deactivate();
@@ -99,7 +104,7 @@ function fillPatients() {
   state.data.test.forEach((p, i) => {
     const o = document.createElement("option");
     o.value = i;
-    o.textContent = `Test patient #${i} — actual: ${p.label === 1 ? "Disease" : "Healthy"}`;
+    o.textContent = p.label == null ? CUSTOM_LABEL : `Test patient #${i} — actual: ${p.label === 1 ? "Disease" : "Healthy"}`;
     sel.appendChild(o);
   });
   state.patient = Math.min(state.patient, state.data.test.length - 1);
@@ -111,7 +116,10 @@ async function selectDisease(slug) {
     const data = await loadDisease(slug);
     clearError();
     state.slug = slug;
+    state.base = data;
     state.data = data;
+    state.realPatient = state.patient;
+    customPatient.reset();
     $("disease").value = slug;
     fillPatients();
     rebuild();
@@ -132,7 +140,10 @@ function toast(msg) {
 }
 // Data-swap hook: replace the active dataset object (Custom run) and re-render the current step.
 function swapData(data) {
+  state.base = data; // a Custom run replaces the base data; the custom patient restarts from it
   state.data = data;
+  state.realPatient = state.patient;
+  customPatient.reset();
   fillPatients();
   rebuild();
   allPatients.refresh();
@@ -150,10 +161,33 @@ if (params.get("settings") === "1") settingsDrawer.setOpen(true);
 // --- All patients overlay (Task 17) ---
 const allPatients = mountAllPatients($("all-btn"), $("allpatients"), {
   getData: () => state.data,
-  getPatient: () => state.patient,
-  onSelect: (i) => { state.patient = i; $("patient").value = i; rebuild(); },
+  getPatient: () => (state.data.test[state.patient] || {}).index ?? state.patient,
+  onSelect: (i) => { if (!Number.isInteger(i)) return; leaveCustom(); state.patient = i; $("patient").value = i; rebuild(); },
 });
 // --- end All patients overlay ---
+
+// --- Custom patient (Task 22c): sliders -> /api/live/predict -> synthetic patient appended to a copy of the data ---
+function leaveCustom() {
+  if (state.data === state.base) return;
+  state.data = state.base;
+  state.patient = state.realPatient;
+  fillPatients();
+  customPatient.reset();
+}
+const customPatient = mountCustomPatient({
+  button: $("custom-btn"), panel: $("custom-panel"),
+  getCtx: () => ({ data: state.base, slug: state.slug, patient: state.data === state.base ? state.patient : state.realPatient }),
+  onPatient: (resp) => {
+    if (state.data === state.base) state.realPatient = state.patient;
+    const c = withCustomPatient(state.base, resp);
+    state.data = c.data;
+    state.patient = c.index;
+    fillPatients();
+    rebuild();
+  },
+  onRevert: () => { leaveCustom(); rebuild(); },
+});
+// --- end Custom patient ---
 
 function gotoStep(n) {
   state.step = clampStep(n);
@@ -161,7 +195,10 @@ function gotoStep(n) {
 }
 
 $("disease").addEventListener("change", (e) => { state.patient = 0; selectDisease(e.target.value); });
-$("patient").addEventListener("change", (e) => { state.patient = +e.target.value; rebuild(); });
+$("patient").addEventListener("change", (e) => {
+  if (state.data.test[+e.target.value].label != null) leaveCustom(); // 22c: picking a real patient drops the custom one
+  state.patient = +e.target.value; rebuild();
+});
 $("prev").addEventListener("click", () => gotoStep(state.step - 1));
 $("next").addEventListener("click", () => gotoStep(state.step + 1));
 $("replay").addEventListener("click", rebuild);

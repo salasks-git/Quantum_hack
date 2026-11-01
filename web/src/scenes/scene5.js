@@ -60,8 +60,9 @@ function dotTexture() {
 }
 
 export default function createScene(ctx) {
-  const test = ctx.data.test;
-  const p = test[ctx.patient];
+  const p = ctx.data.test[ctx.patient];
+  const test = ctx.data.test.filter((q) => q.label != null); // scoreboard: real labelled patients only (custom patient has label null)
+  const custom = p.label == null;
   const actualSick = p.label === 1;
   const nSick = test.filter((q) => q.label === 1).length;
   const scores = Object.fromEntries(MODEL_KEYS.map((k) => [k, clinicalScores(test, k)]));
@@ -195,7 +196,7 @@ export default function createScene(ctx) {
     const verdict = c.v.disease
       ? `<b style="color:${hex(PALETTE.sick)}">DISEASE</b>`
       : `<b style="color:${hex(PALETTE.healthy)}">HEALTHY</b>`;
-    const mark = c.correct
+    const mark = custom ? "" : c.correct
       ? `<span style="color:${hex(PALETTE.healthy)}">✓</span>`
       : `<span style="color:${hex(PALETTE.sick)}">✗</span>`;
     const bl = c.v.borderline ? ` <i style="color:#f0abfc">borderline</i>` : "";
@@ -298,7 +299,11 @@ export default function createScene(ctx) {
           : ""));
       });
       html += `<div style="display:grid;grid-template-columns:auto auto auto auto 1fr;gap:1px 10px;margin-top:6px;line-height:1.4">${grid.join("")}</div>`;
-      if (t >= ACTUAL_AT) {
+      if (t >= ACTUAL_AT && custom) {
+        html += `<div style="margin-top:5px">Actual diagnosis: <b>Unknown (custom patient)</b> · not counted in the scoreboard${
+          anyBorderline ? ` · <i style="color:#f0abfc">borderline</i>: probability and decision disagree; verdict follows the decision` : ""
+        }</div>`;
+      } else if (t >= ACTUAL_AT) {
         const actual = actualSick
           ? `<b style="color:${hex(PALETTE.sick)}">Disease</b>`
           : `<b style="color:${hex(PALETTE.healthy)}">Healthy</b>`;

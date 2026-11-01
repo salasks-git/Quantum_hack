@@ -38,7 +38,8 @@ export function rocAuc(labels, probs) {
   return (sumPos - (nPos * (nPos + 1)) / 2) / (nPos * nNeg);
 }
 
-export function modelMetrics(test, key) {
+export function modelMetrics(allTest, key) {
+  const test = allTest.filter((p) => p.label != null); // custom patient (label null) is excluded
   const labels = test.map((p) => p.label);
   const c = clinicalScores(test, key);
   const cm = { tp: c.tp, fp: c.fp, fn: c.fn, tn: c.tn };
