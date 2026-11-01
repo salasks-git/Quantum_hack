@@ -127,6 +127,52 @@ Open your browser at `http://localhost:8501`.
 
 ---
 
+## 🎬 3D Diagnosis Tour
+
+A browser-based, Three.js walkthrough that shows how one patient gets diagnosed, step by step, by the classical and quantum models. It lives in `web/` and runs separately from the Streamlit app. It needs no internet at runtime (Three.js is bundled).
+
+### Run it
+```bash
+# 1. Export the tour data (once, or whenever the models change). Writes JSON into web/public/data/
+venv/bin/python scripts/export_tour_data.py
+
+# 2. Start the dev server
+cd web && npm install && npm run dev
+```
+For the venue, use a production build instead: `cd web && npm run build && npm run preview`.
+
+### What you are looking at
+- **Disease picker:** one of the 5 clinical datasets (breast cancer, diabetes, heart disease, Parkinson's, vertebral column).
+- **Patient picker:** one of the 25 held-out test patients for that disease. The models never saw these patients during training, and each one is labelled with the true diagnosis. All four models (Linear SVM, RBF SVM, QSVC, VQC) train on the same 75 patients per disease.
+
+### The 5 scenes
+1. **Patient becomes qubits:** the patient's measurements are standardized, reduced to 3 numbers (PCA) and turned into 3 qubit angles.
+2. **Classical doctors:** the Linear SVM and RBF SVM each draw a boundary through the training patients and say which side this patient is on.
+3. **QSVC quantum similarity:** the patient is encoded into quantum states and compared with the training patients (the quantum kernel). Bloch spheres show the first encoding layer only.
+4. **VQC learning:** the trainable circuit adjusts its rotation angles, the loss falls, then it gives its verdict.
+5. **Finale, four verdicts:** all four models give their diagnosis side by side, with confidence, next to the true label.
+
+### Controls
+- **Prev / Next:** move between scenes. **Replay:** restart the current scene.
+- **Play all:** run scenes 1 to 5 automatically.
+- **Pause / Resume:** button, or press **Space**.
+- **3s holds:** when on, playback stops for 3 seconds at key moments so you can talk over them.
+
+### Deep links (URL parameters)
+| Param | Meaning |
+|-------|---------|
+| `disease` | dataset slug, e.g. `heart_disease_statlog` |
+| `patient` | test patient number, starting at 0 |
+| `step` | scene number, 1 to 5 |
+| `holds=1` | turn the 3s holds on |
+
+Rehearsal link: `http://localhost:5180/?disease=heart_disease_statlog&patient=3&step=1&holds=1` (use the port Vite prints; 5173 by default).
+
+### Matching the Streamlit app
+The tour numbers are precomputed with a fixed seed (42), 3 qubits and 100 patients per disease. In Streamlit, set 3 qubits, 100 patients, `ZZFeatureMap`, reps 2, `linear` entanglement and 35 iterations to see the same quantum results.
+
+---
+
 ## 📁 Repository Structure
 
 ```text
@@ -156,8 +202,15 @@ Quantum_hack/
 │   ├── heart_disease_statlog.csv
 │   ├── parkinsons_vocal.csv
 │   └── vertebral_column.csv
+├── tests/                     # pytest tests (models, tour data export)
+├── docs/                      # Design specs and implementation plans
+├── web/                       # Three.js 3D diagnosis tour (Vite)
+│   ├── src/                   # Scenes, scene manager, data loader
+│   ├── public/data/           # Tour JSON written by export_tour_data.py
+│   └── scripts/smoke.sh       # Headless screenshot smoke test
 └── scripts/                   # Automated data pipelines
-    └── download_datasets.py   # Dataset ingestion and preprocessing script
+    ├── download_datasets.py   # Dataset ingestion and preprocessing script
+    └── export_tour_data.py    # Exports per-disease JSON for the 3D tour
 ```
 
 ---
