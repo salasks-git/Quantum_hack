@@ -10,8 +10,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from qmed.circuits import build_ansatz, build_feature_map  # noqa: E402
 from qmed.config import (  # noqa: E402
-    DATASETS, FEATURE_MAP_ZZ, LINEAR_SVM, QSVC_MODEL, RANDOM_STATE, RBF_SVM, VQC_MODEL,
+    DATASETS, FEATURE_MAP_ZZ, HYBRID_ENSEMBLE, LINEAR_SVM, QSVC_MODEL, RANDOM_STATE, RBF_SVM, VQC_MODEL,
 )
+from qmed.hardware import qpu_profile  # noqa: E402
 from qmed.data import prepare_data  # noqa: E402
 from qmed.models import train_all_models  # noqa: E402
 
@@ -37,6 +38,8 @@ def export_dataset(label: str, csv_path: Path, grid_size: int = 24) -> dict:
     for i in range(len(data.y_test)):
         models = {k: {"pred": int(res[n]["pred"][i]), "prob": float(np.round(res[n]["prob"][i], 4))}
                   for k, n in keys.items()}
+        hp = float(np.round(res[HYBRID_ENSEMBLE]["prob"][i], 4))
+        models["hybrid"] = {"pred": int(res[HYBRID_ENSEMBLE]["pred"][i]), "prob": hp}
         test.append({
             "index": i, "label": int(data.y_test[i]),
             "raw": _r(data.X_test_raw[i]), "standardized": _r(data.X_test_std[i]),
@@ -63,6 +66,10 @@ def export_dataset(label: str, csv_path: Path, grid_size: int = 24) -> dict:
                      "entanglement": ENTANGLEMENT, "vqc_iter": VQC_ITER, "seed": RANDOM_STATE},
         "train": {"angles": _r(data.X_train_q), "labels": [int(v) for v in data.y_train]},
         "test": test,
+        "timings": {k: {"train_s": float(res[n]["train_time"]), "inf_s": float(res[n]["inf_time"]),
+                        "total_s": float(res[n]["total_time"])}
+                    for k, n in {**keys, "hybrid": HYBRID_ENSEMBLE}.items()},
+        "qpu": qpu_profile(fm, ansatz, N_QUBITS, len(data.X_train_q), len(data.X_test_q), VQC_ITER),
         "linear": {"coef": _r(lin.coef_[0]), "intercept": float(np.round(lin.intercept_[0], 4))},
         "rbf": {"grid_size": grid_size, "min": GRID_MIN, "max": GRID_MAX, "values": _r(rbf_values)},
         "qsvc": {"kernel_train": _r(res[QSVC_MODEL]["kernel_matrix"]), "kernel_test": _r(kernel_test)},

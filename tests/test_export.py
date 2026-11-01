@@ -56,3 +56,13 @@ def test_prepare_data_backward_compatible():
     d = prepare_data(DATASETS[LABEL], 100, 3)
     for f in ("X_train_q", "X_test_q", "y_train", "y_test", "pca", "prep_time"):
         assert hasattr(d, f)
+
+
+def test_hybrid_timings_qpu(result):
+    for p in result["test"]:
+        h = p["models"]["hybrid"]
+        assert h["pred"] in (0, 1) and 0 <= h["prob"] <= 1
+        assert h["pred"] == int(h["prob"] >= 0.5)
+    assert set(result["timings"]) == {"linear", "rbf", "qsvc", "vqc", "hybrid"}
+    assert all(t["total_s"] > 0 for t in result["timings"].values())
+    assert result["qpu"]["qsvc_qpu_s"] > 0

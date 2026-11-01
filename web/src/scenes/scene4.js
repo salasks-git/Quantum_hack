@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LEGEND_4 } from "./legends.js";
 import { PALETTE, ease, seg, textSprite, glowSprite, setOpacity, disposeTree, addLights } from "./common.js";
 import { verdictFor } from "../verdict.js";
 
@@ -248,6 +249,7 @@ export default function createScene(ctx) {
   let lastE = -1;
   return {
     title: "VQC learning",
+    legend: LEGEND_4,
     scene,
     cameraPos: [0.1, 0.45, 6.9],
     duration,
