@@ -117,6 +117,7 @@ Q-Med integrates five diverse, real-world medical datasets representing five org
 | **Cardiology** | **Statlog Heart Disease** | 270 | 13 | Resting blood pressure, serum cholesterol, fasting blood sugar, resting ECG, max heart rate, exercise angina, ST depression, thallium scan | Heart Disease Present |
 | **Endocrinology** | **Pima Indians Diabetes** | 768 | 8 | Pregnancies, oral glucose tolerance test, diastolic BP, triceps skin fold, serum insulin, BMI, diabetes pedigree, age | Tested Diabetic Positive |
 | **Orthopedics** | **Vertebral Column 2C** | 310 | 6 | Pelvic incidence, pelvic tilt, lumbar lordosis angle, sacral slope, pelvic radius, degree of spondylolisthesis | Biomechanical Abnormality (Hernia / Spondylolisthesis) |
+| **Nephrology / Urology** | **Acute Inflammations** | 120 | 6 | Temperature, nausea, lumbar pain, urine pushing, micturition pains, burning urethra | Acute Bladder Inflammation |
 
 ---
 
@@ -131,13 +132,16 @@ Quantum_hack/
 ├── AGENTS.md                  # Autonomous agent setup instructions & project context
 ├── README.md                  # Project overview and quickstart guide
 ├── PROJECT_OVERVIEW.md        # Comprehensive proposal, mathematical framework & detailed architecture
-├── data/                      # 5 cleaned, offline-ready CSV datasets
+├── data/                      # 6 cleaned, offline-ready CSV datasets
 │   ├── breast_cancer_wisconsin.csv
 │   ├── parkinsons_vocal.csv
 │   ├── heart_disease_statlog.csv
 │   ├── diabetes_pima.csv
-│   └── vertebral_column.csv
+│   ├── vertebral_column.csv
+│   └── acute_inflammations.csv
 ├── scripts/
+
+
 │   └── download_datasets.py   # Ingestion, schema cleaning, and OpenML extraction script
 └── qmed/                      # Core Quantum Diagnostic Package (Pure Python)
     ├── __init__.py            # Package root exposing public interface

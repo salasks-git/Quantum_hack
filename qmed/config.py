@@ -42,7 +42,9 @@ DATASETS = {
     "Wisconsin Breast Cancer (Oncology)": DATA_DIR / "breast_cancer_wisconsin.csv",
     "Pima Indians Diabetes (Endocrinology)": DATA_DIR / "diabetes_pima.csv",
     "Vertebral Column (Orthopedics)": DATA_DIR / "vertebral_column.csv",
+    "Acute Inflammations (Nephrology / Urology)": DATA_DIR / "acute_inflammations.csv",
 }
+
 
 QUBIT_OPTIONS = [2, 3, 4]
 FEATURE_MAP_ZZ = "ZZFeatureMap"

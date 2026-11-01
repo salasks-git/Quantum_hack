@@ -19,6 +19,7 @@
 - **Cardiology:** Statlog Heart Disease Prediction
 - **Endocrinology:** Pima Indians Diabetes Screening
 - **Orthopedics:** Vertebral Column Abnormality Detection (Disc Hernia / Spondylolisthesis)
+- **Nephrology & Urology:** Acute Inflammations (Urinary Bladder Inflammation / Nephritis)
 
 The platform implements a complete 3-stage quantum preprocessing pipeline, parameterizable quantum circuits (Feature Maps & Variational Ansätze), fidelity-based quantum kernels, and a real-time clinical inference simulator.
 
@@ -70,6 +71,8 @@ All datasets are automatically cleaned, labeled into standardized binary targets
 | **Statlog Heart Disease** | Cardiology | 270 | 13 | Resting ECG, blood pressure, thallium heart scan (Heart Disease=1) |
 | **Pima Indians Diabetes** | Endocrinology | 768 | 8 | Glucose, insulin, BMI, age (Tested Positive=1) |
 | **Vertebral Column** | Orthopedics | 310 | 6 | Pelvic incidence/tilt, lumbar lordosis, sacral slope, spondylolisthesis grade (Abnormal=1) |
+| **Acute Inflammations** | Nephrology / Urology | 120 | 6 | Temperature, nausea, lumbar pain, urine pushing, micturition pains, burning urethra (Inflammation=1) |
+
 
 ---
 

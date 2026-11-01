@@ -55,7 +55,55 @@ def download_all():
     df_vert.to_csv(os.path.join(DATA_DIR, "vertebral_column.csv"), index=False)
     print(f"✅ Saved data/vertebral_column.csv ({df_vert.shape[0]} rows, {df_vert.shape[1]-1} features)")
 
-    print("🎉 All 5 datasets downloaded, cleaned, and ready for offline QML training!")
+    # 6. Acute Inflammations (Nephrology / Urology - 120 rows, 6 features)
+    # UCI ID 184 / OpenML 1556: Presumptive diagnosis of Acute Inflammation of Urinary Bladder
+    try:
+        import io
+        import urllib.request
+        import zipfile
+        url = "https://archive.ics.uci.edu/static/public/184/acute+inflammations.zip"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as resp:
+            z = zipfile.ZipFile(io.BytesIO(resp.read()))
+            raw = z.read("diagnosis.data")
+            try:
+                text = raw.decode("utf-16")
+            except Exception:
+                text = raw.decode("latin1")
+        lines = [line.strip().split("\t") for line in text.strip().splitlines() if line.strip()]
+        cols = [
+            "temperature", "nausea", "lumbar_pain", "urine_pushing",
+            "micturition_pains", "burning_urethra", "bladder_inflammation", "nephritis"
+        ]
+        df_inflam = pd.DataFrame(lines, columns=cols)
+        df_inflam["temperature"] = df_inflam["temperature"].str.replace(",", ".").astype(float)
+        bmap = {"yes": 1, "no": 0, "1": 1, "0": 0}
+        for c in ["nausea", "lumbar_pain", "urine_pushing", "micturition_pains", "burning_urethra"]:
+            df_inflam[c] = df_inflam[c].str.lower().map(bmap).astype(int)
+        df_inflam["target"] = df_inflam["bladder_inflammation"].str.lower().map(bmap).astype(int)
+        df_inflam = df_inflam[["temperature", "nausea", "lumbar_pain", "urine_pushing", "micturition_pains", "burning_urethra", "target"]]
+    except Exception:
+        # Fallback to OpenML 1556 if direct archive is unavailable
+        try:
+            acute = fetch_openml(data_id=1556, as_frame=True, parser="auto")
+        except Exception:
+            acute = fetch_openml(data_id=1556, as_frame=True, parser="liac-arff")
+        df_inflam = acute.data.copy()
+        df_inflam.columns = [
+            "temperature", "nausea", "lumbar_pain", "urine_pushing",
+            "micturition_pains", "burning_urethra"
+        ]
+        df_inflam["temperature"] = df_inflam["temperature"].astype(float)
+        bmap = {"yes": 1, "no": 0, "1": 1, "0": 0}
+        for c in ["nausea", "lumbar_pain", "urine_pushing", "micturition_pains", "burning_urethra"]:
+            df_inflam[c] = df_inflam[c].astype(str).str.lower().map(bmap).astype(int)
+        df_inflam["target"] = (acute.target.astype(str).str.lower() == "yes").astype(int).to_numpy()
+
+    df_inflam.to_csv(os.path.join(DATA_DIR, "acute_inflammations.csv"), index=False)
+    print(f"✅ Saved data/acute_inflammations.csv ({df_inflam.shape[0]} rows, {df_inflam.shape[1]-1} features)")
+
+    print("🎉 All 6 datasets downloaded, cleaned, and ready for offline QML training!")
 
 if __name__ == "__main__":
     download_all()
+
