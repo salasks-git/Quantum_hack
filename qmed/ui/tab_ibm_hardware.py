@@ -152,7 +152,16 @@ def render(cfg: PipelineConfig, data: PreparedData, feature_map, ansatz, results
         "to measure real QPU latency and noise impact."
     )
 
-    api_token = st.text_input("IBM Quantum API Token:", type="password", help="From quantum.ibm.com/account", key="ibm_token_input")
+    from qmed.config import QISKIT_IBM_TOKEN
+    default_token = QISKIT_IBM_TOKEN if QISKIT_IBM_TOKEN and "your_ibm_quantum" not in QISKIT_IBM_TOKEN else ""
+    api_token = st.text_input(
+        "IBM Quantum API Token:",
+        value=default_token,
+        type="password",
+        help="Preloaded from .env (or enter from quantum.ibm.com/account)",
+        key="ibm_token_input",
+    )
+
 
     col_btn1, col_btn2 = st.columns([1, 1])
     with col_btn1:
