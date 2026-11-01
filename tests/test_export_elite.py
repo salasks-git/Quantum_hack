@@ -59,3 +59,29 @@ def test_metrics_match_test_preds(elite):
                        np.array([x["prob"] for x in t]))
         for k, v in m.items():
             assert abs(v - r[k]) < 1e-6, (r["model"], k)
+
+
+@pytest.mark.parametrize("slug", [Path(c).stem for c in DATASETS.values()])
+def test_elite_quhama_equals_quhama_json(slug):
+    """Scene 8 shows ONE set of QuHaMA numbers: elite.json reuses the <slug>.quhama.json run."""
+    e = json.loads((DATA / f"{slug}.elite.json").read_text())
+    q = json.loads((DATA / f"{slug}.quhama.json").read_text())
+    names = {"accuracy": "Accuracy", "f2": "F2-Score", "precision": "Precision", "recall": "Recall", "roc_auc": "ROC-AUC"}
+    m = e["approaches"]["quhama"]["metrics"]
+    row = next(r for r in e["leaderboard"] if r["key"] == "quhama")
+    for k, qk in names.items():
+        assert abs(m[k] - q["metrics"][qk]) < 1e-5, (slug, k)
+        assert row[k] == m[k]
+    t_e, t_q = e["approaches"]["quhama"]["test"], q["test"]
+    assert [r["pred"] for r in t_e] == [r["pred"] for r in t_q]
+    assert all(abs(a["prob"] - b["p_final"]) < 1e-9 for a, b in zip(t_e, t_q))
+    assert e["approaches"]["quhama"]["architecture"]["epochs_encoder"] == q["settings"]["epochs_encoder"]
+
+
+def test_quhama_section_reuses_export_without_training(monkeypatch):
+    import export_tour_elite as ete
+    monkeypatch.setattr(ete, "export_quhama", lambda *a, **k: (_ for _ in ()).throw(AssertionError("retrained")))
+    q = json.loads((DATA / f"{SLUG}.quhama.json").read_text())
+    sec = ete.quhama_section(q, [r["label"] for r in q["test"]])
+    assert sec["metrics"]["f2"] == pytest.approx(q["metrics"]["F2-Score"], abs=1e-5)
+    assert ete.load_quhama(DATA / f"{SLUG}.csv", None, DATA)["slug"] == SLUG

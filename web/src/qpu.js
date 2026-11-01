@@ -48,8 +48,27 @@ export async function health({ base = API_BASE } = {}) {
 }
 
 /**
- * POST /api/qpu/submit {slug, patient, confirm:true}. Uses real QPU time unless the helper has a cached result.
- * Refuses (no network call) unless opts.confirm === true.
+ * GET /api/qpu/token: one-time click token (single use, ~30 s). Free, never contacts IBM.
+ * Only call it from inside the Confirm click handler.
+ * -> {ok:true, token} | {ok:false, error}
+ */
+export async function token({ base = API_BASE } = {}) {
+  let res;
+  try {
+    res = await doFetch(`${base}/token`, { cache: "no-store" });
+  } catch {
+    return { ok: false, error: "server-down" };
+  }
+  const body = await readJson(res);
+  if (res.ok && body && typeof body.token === "string" && body.token) return { ok: true, token: body.token };
+  return { ok: false, error: String((body && body.error) || `Helper answered HTTP ${res.status}`) };
+}
+
+/**
+ * POST /api/qpu/submit {slug, patient, confirm:true, run_id?} with header X-QPU-Token.
+ * Uses real QPU time unless the helper has a cached result. Never retried.
+ * Refuses (no network call) unless opts.confirm === true AND a click token is given.
+ * runId: a live Custom run's id, so the helper uses that run's settings and patient pair.
  * -> {kind:"submitted", job_id, backend, pending_jobs, partner, ideal_fidelity, submitted_at}
  *  | {kind:"cached", job_id, hw_fidelity, ideal_fidelity, noise_gap, backend, partner, counts, ...}
  *  | {kind:"busy", job_id, error}      409: another job is in flight
@@ -57,14 +76,17 @@ export async function health({ base = API_BASE } = {}) {
  *  | {kind:"error", status, error}     400/404/502/503/500
  *  | {kind:"server-down"}
  */
-export async function submit(slug, patient, { confirm = false, base = API_BASE } = {}) {
+export async function submit(slug, patient, { confirm = false, runId = null, token: tok = null, base = API_BASE } = {}) {
   if (confirm !== true) throw new Error("submit() requires { confirm: true } (real QPU time)");
+  if (typeof tok !== "string" || !tok) throw new Error("submit() requires a click token from token()");
+  const payload = { slug, patient, confirm: true };
+  if (runId) payload.run_id = runId;
   let res;
   try {
     res = await doFetch(`${base}/submit`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug, patient, confirm: true }),
+      headers: { "Content-Type": "application/json", "X-QPU-Token": tok },
+      body: JSON.stringify(payload),
     });
   } catch {
     return { kind: "server-down" };

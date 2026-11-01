@@ -347,9 +347,9 @@ For offline demos at the venue, use a production build instead: `cd web && npm r
 
 For the live features (retraining, custom patient, IBM), start the helper in a second terminal from the repo root:
 ```bash
-python scripts/qpu_server.py            # 127.0.0.1:8765; flags: --port, --max-jobs (default 3), --account
+venv/bin/python scripts/qpu_server.py   # 127.0.0.1:8765; flags: --port, --max-jobs (default 3), --account
 ```
-Vite proxies `/api` to the helper. Without it the tour still works on the static data.
+Vite proxies `/api` to the helper on port `$QMED_HELPER_PORT` (default 8765), so if you start the helper with `--port N`, start Vite with `QMED_HELPER_PORT=N npm run dev`. Without the helper the tour still works on the static data. Agents, smoke runs and test harnesses must point `QMED_HELPER_PORT` at a stub or unused port (`web/scripts/smoke.sh` defaults to 8799), never the presenter's real helper.
 
 ### Diseases
 All 7 datasets in `qmed/config.py`: Parkinson's, heart disease, breast cancer, diabetes, vertebral column, acute inflammations and maternal health. Pick the disease and one of the held-out test patients in the top bar. The models never saw these patients during training, and each is labelled with the true diagnosis.
@@ -378,7 +378,7 @@ The old "3s holds" toggle has been removed.
 
 ### Static vs live mode
 - **Static (default):** the data is precomputed by `scripts/export_tour_data.py` (plus `export_dataset_tables.py` and `export_tour_extras.py`) with settings that match the Streamlit defaults: 3 qubits, `ZZFeatureMap`, reps 2, `linear` entanglement, 100 patients, VQC 35 iterations, seed 42 and kernel bandwidth s = 0.1 (`DEFAULT_BANDWIDTH`).
-- **Live (needs `python scripts/qpu_server.py`):**
+- **Live (needs `venv/bin/python scripts/qpu_server.py`):**
   - **Retrain with settings:** same options as the Streamlit sidebar (60 to 180 patients in steps of 20, 2 to 4 qubits, feature map, depth, entanglement, bandwidth, VQC iterations). A run takes a few seconds, then the whole tour replays on it with a "Custom run" badge. "Reset to precomputed" goes back to the static data.
   - **Custom patient:** the sliders call the helper and show every model's prediction for that patient.
   - **IBM backends and live QPU run** (scene 6), see below.
@@ -386,11 +386,15 @@ The old "3s holds" toggle has been removed.
 ### IBM setup (free tier)
 The live QPU run and the backend list need a saved Qiskit account on channel `ibm_quantum_platform` (or the `QISKIT_IBM_TOKEN` environment variable) and an IBM Cloud quantum instance (the free Open Plan works). The token stays inside the helper and is never sent to the browser or logged.
 
+The live run uses the **active pipeline config**: the static data's settings (3 qubits, ZZ, reps 2, linear, s = 0.1) or, when a ⚙️ Custom run is loaded, that run's qubits, feature map, depth, entanglement and bandwidth. The circuit is the same bandwidth-scaled feature map the QSVC kernel uses, the partner is that data's most similar training patient, and the panel's "ideal fidelity" equals scene 3's K for the pair. (The Streamlit tab uses the unscaled map with arbitrary pairs.) At s = 0.1 the circuit is close to identity, so hardware fidelity is high and the gap is the honest noise floor. Custom slider patients and `?fixture=` data cannot be sent.
+
 Free-tier safeguards:
-- You confirm before every run, and nothing submits automatically.
+- You confirm before every run (the dialog names the disease, patient and partner), and nothing submits automatically or retries.
+- Each confirm click fetches a one-time click token (`GET /api/qpu/token`, single use, 30 s); a submit without it is refused.
+- Only a real local browser can submit: the helper refuses headless or non-browser User-Agents, non-JSON bodies and foreign `Origin`/`Referer`/`Sec-Fetch-Site` (start it with `--allow-scripted-submit` to lift the UA check). Every submit attempt is logged to `web/.qpu-submit.log` (gitignored, never contains tokens).
 - One job in flight at a time, and at most 3 jobs per helper run (`--max-jobs`).
 - 60 s execution cap, 1024 shots.
-- Results are cached in `web/.qpu-cache.json` (gitignored), so repeating a patient costs nothing.
+- Results are cached in `web/.qpu-cache.json` (gitignored) per disease, patient and settings hash, so repeating a pair with the same config costs nothing. Older results made with the unscaled s = 1.0 circuit are kept under `legacy` ("old config (s = 1.0)") and never shown as current.
 - The health check never contacts IBM. The backend list (📡 button in scene 6) contacts IBM only when clicked, submits nothing and uses no QPU time.
 
 ### Deep links (URL parameters)

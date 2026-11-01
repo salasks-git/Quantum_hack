@@ -11,10 +11,22 @@ export const MSG = {
   noRuntime: "pip install qiskit-ibm-runtime",
   budget: (used, max) => `QPU budget for this session used (${used}/${max})`,
 };
-export const confirmText = (shots = 1024, capS = 60) =>
-  `This sends 1 circuit × ${shots} shots to a real IBM QPU and uses free-tier time (~seconds, capped at ${capS} s). Continue?`;
+export const CONFIRM_LABEL = "Send to IBM";
+export const CONFIRM_MIN_MS = 600; // a confirm click is accepted only this long after the dialog appeared
+/** Names exactly what will be sent. */
+export const confirmText = ({ label, patient, partner, shots = 1024, capS = 60 } = {}) =>
+  `Send ${label || "this disease"} test patient #${patient} vs training #${partner} to a real IBM QPU `
+  + `(1 circuit × ${shots} shots, ≤${capS} s of free-tier time)?`;
+/** "3 qubits · ZZ · d2 · linear · s=0.1" from a data.settings block. */
+export const settingsLine = (st) => {
+  if (!st) return "";
+  const fm = String(st.feature_map || "").replace(/FeatureMap$/, "").replace(/^Pauli$/, "Pauli");
+  const s = st.kernel_bandwidth == null ? 1 : st.kernel_bandwidth;
+  return `${st.n_qubits} qubits · ${fm} · d${st.reps} · ${st.entanglement} · s=${s}`;
+};
 
-const keyOf = (s) => `${s.slug}|${s.patient}`;
+// Results never cross runs: a Custom run (runId) and the static data are different keys.
+const keyOf = (s) => `${s.slug}|${s.runId || "static"}|${s.patient}`;
 const argmax = (row) => {
   let best = -1, bi = -1;
   (row || []).forEach((v, i) => { if (v > best) { best = v; bi = i; } });
@@ -23,14 +35,17 @@ const argmax = (row) => {
 const isAbort = (e) => e && e.name === "AbortError";
 
 /**
- * Phases: hidden | checking | unavailable | ready | confirm | submitting | running | done | failed
- * selection: {slug, patient, kRow} where kRow = data.qsvc.kernel_test[patient] (scene 3's K row).
+ * Phases: hidden | disabled | checking | unavailable | ready | confirm | submitting | running | done | failed
+ * selection: {slug, patient, runId, kRow, settings, label, disabled}
+ *   kRow = data.qsvc.kernel_test[patient] (scene 3's K row); runId = live Custom run id or null;
+ *   disabled = reason string (custom slider patient, dev fixture): panel shows it with a disabled Run button.
  */
 export function createQpuController({ client = qpuClient, onChange = () => {}, intervalMs = 5000 } = {}) {
   let active = false;
   let sel = null;
   let gen = 0; // bumps on every activate/deactivate; stale async callbacks compare against it
   let poll = null; // AbortController of the UI polling loop
+  let confirmAt = 0; // when the confirm dialog appeared (ms)
   const jobs = new Map(); // key -> {job_id, backend, pending_jobs, partner, ideal_fidelity, submitted_at, slug, patient}
   const jobKey = new Map(); // job_id -> key (only jobs this page submitted)
   const results = new Map(); // key -> final result + {slug, patient, cached}
@@ -119,14 +134,18 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
   }
 
   function activate(selection) {
-    if (active && sel && keyOf(sel) === keyOf(selection)) { sel = selection; emit(); return; } // e.g. Replay
+    if (active && sel && keyOf(sel) === keyOf(selection) && !sel.disabled === !selection.disabled
+      && st.phase !== "disabled") { sel = selection; emit(); return; } // e.g. Replay
     abortPoll();
     gen += 1;
     active = true;
     sel = selection;
     const key = keyOf(sel);
     st.job = null; st.status = null; st.foreign = false; st.error = "";
-    if (results.has(key)) {
+    if (sel.disabled) {
+      st.phase = "disabled";
+      emit();
+    } else if (results.has(key)) {
       st.phase = "done";
       emit();
       refreshHealthQuietly();
@@ -152,6 +171,7 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
   function requestRun() {
     if (!active || st.phase !== "ready" || !canRun()) return false;
     st.phase = "confirm";
+    confirmAt = Date.now();
     emit();
     return true;
   }
@@ -162,8 +182,9 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
     emit();
   }
 
+  // The ONLY path to a submit. One confirm = one token request + at most one POST; never retried.
   async function confirmRun() {
-    if (!active || st.phase !== "confirm" || !canRun()) return;
+    if (!active || st.phase !== "confirm" || !canRun() || !sel || sel.disabled) return;
     const g = gen;
     const s = sel;
     const key = keyOf(s);
@@ -171,7 +192,13 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
     emit();
     let r;
     try {
-      r = await client.submit(s.slug, s.patient, { confirm: true });
+      const t = client.token ? await client.token() : { ok: false, error: "no token support" };
+      if (!t || !t.ok) {
+        r = t && t.error === "server-down" ? { kind: "server-down" }
+          : { kind: "error", error: `Could not arm the QPU run: ${(t && t.error) || "no click token"}` };
+      } else {
+        r = await client.submit(s.slug, s.patient, { confirm: true, runId: s.runId || null, token: t.token });
+      }
     } catch (e) {
       r = { kind: "error", error: String((e && e.message) || e) };
     }
@@ -225,14 +252,15 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
 
   // Lists IBM backends and queues (contacts IBM, submits nothing). Only ever called from a button click.
   async function showBackends() {
-    if (bk.phase === "loading") return;
+    if (bk.phase === "loading" || !active) return;
+    const g = gen;
     bk.phase = "loading"; bk.error = "";
     emit();
     let r;
     try { r = await client.backends(); } catch (e) { r = { ok: false, error: String((e && e.message) || e) }; }
     if (r && r.ok) { bk.phase = "ok"; bk.rows = r.rows || []; }
     else { bk.phase = "error"; bk.error = (r && r.error) || "Could not list backends."; }
-    emit();
+    if (g === gen && active) emit(); // M11: a late answer never redraws over another state
   }
 
   function recheck() {
@@ -247,7 +275,10 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
     const partner = result && Number.isInteger(result.partner) ? result.partner : argmax(sel && sel.kRow);
     const kPair = sel && sel.kRow && partner >= 0 ? sel.kRow[partner] : null;
     return {
-      phase: st.phase, active, sel: sel ? { slug: sel.slug, patient: sel.patient } : null,
+      phase: st.phase, active,
+      sel: sel ? { slug: sel.slug, patient: sel.patient, runId: sel.runId || null, label: sel.label || null,
+        settings: sel.settings || null, disabled: sel.disabled || null } : null,
+      confirmAt,
       health: st.health, messages: st.messages.slice(), canRun: canRun(),
       job: st.job, status: st.status, foreign: st.foreign, error: st.error,
       result: st.phase === "done" ? result : null, partner, kPair,
@@ -255,7 +286,7 @@ export function createQpuController({ client = qpuClient, onChange = () => {}, i
     };
   }
 
-  return { activate, deactivate, requestRun, cancel, confirmRun, recheck, showBackends, view };
+  return { activate, deactivate, requestRun, cancel, confirmRun, recheck, showBackends, view, phase: () => st.phase };
 }
 
 // ------------------------------------------------------------------ rendering
@@ -301,11 +332,18 @@ export function renderQpuPanel(v, nowS = Date.now() / 1000) {
   const budget = h ? `<span class="qp-budget" title="Jobs this helper run / budget">jobs ${h.jobs_used}/${h.jobs_max}</span>` : "";
   const shots = (h && h.shots) || 1024, cap = (h && h.max_execution_time_s) || 60;
   let html = `<div class="qp-head"><span>Real IBM QPU · free tier</span>${budget}</div>`;
+  if (v.sel && v.phase === "disabled") {
+    html += `<div class="qp-msg qp-warn">${msgHtml(v.sel.disabled)}</div>`;
+    html += `<div class="qp-actions"><button class="qp-btn" disabled>${esc(RUN_LABEL)}</button></div>`;
+    return html;
+  }
   if (v.sel) {
     const pair = v.partner >= 0
       ? `patient #${v.sel.patient} vs training #${v.partner} (most similar) · scene 3 K = ${n3(v.kPair)}`
       : `patient #${v.sel.patient}`;
     html += `<div class="qp-sub">${esc(pair)}</div>`;
+    const sl = settingsLine(v.sel.settings);
+    if (sl) html += `<div class="qp-sub qp-dim">${esc(sl)}${v.sel.runId ? " · Custom run" : ""}</div>`;
   }
   switch (v.phase) {
     case "checking":
@@ -320,8 +358,9 @@ export function renderQpuPanel(v, nowS = Date.now() / 1000) {
       html += `<div class="qp-note">1 circuit × ${esc(shots)} shots · capped at ${esc(cap)} s · asks before sending</div>`;
       break;
     case "confirm":
-      html += `<div class="qp-confirm" role="alertdialog" aria-label="Confirm QPU run"><div>${esc(confirmText(shots, cap))}</div>`
-        + `<div class="qp-actions"><button class="qp-btn" data-act="cancel">Cancel</button><button class="qp-btn qp-go" data-act="confirm">Run</button></div></div>`;
+      html += `<div class="qp-confirm" role="alertdialog" aria-label="Confirm QPU run"><div>${esc(confirmText({
+        label: v.sel && v.sel.label, patient: v.sel && v.sel.patient, partner: v.partner, shots, capS: cap }))}</div>`
+        + `<div class="qp-actions"><button class="qp-btn" data-act="cancel">Cancel</button><button class="qp-btn qp-go" data-act="confirm">${esc(CONFIRM_LABEL)}</button></div></div>`;
       break;
     case "submitting":
       html += `<div class="qp-msg qp-dim"><span class="qp-spin"></span>Submitting to IBM…</div>`;
@@ -349,7 +388,7 @@ export function renderQpuPanel(v, nowS = Date.now() / 1000) {
       html += `<div class="qp-done">${r.cached ? `<span class="qp-tag">cached result</span>` : `<span class="qp-tag qp-new">done</span>`}`
         + `<span class="qp-dim">${esc(r.backend || "")}${r.job_id ? ` · ${esc(r.job_id)}` : ""}</span></div>`;
       html += `<dl class="qp-kv qp-res">`
-        + `<dt>Hardware fidelity</dt><dd><b>${n3(r.hw_fidelity)}</b> <span class="qp-dim">P(000)</span></dd>`
+        + `<dt>Hardware fidelity</dt><dd><b>${n3(r.hw_fidelity)}</b> <span class="qp-dim">P(${"0".repeat((r.settings && r.settings.n_qubits) || (v.sel && v.sel.settings && v.sel.settings.n_qubits) || 3)})</span></dd>`
         + `<dt>Ideal fidelity</dt><dd>${n3(r.ideal_fidelity)} <span class="qp-dim">simulator</span></dd>`
         + `<dt>Noise gap</dt><dd><b>${n3(r.noise_gap)}</b> <span class="qp-dim">ideal − hardware</span></dd>`
         + `<dt>Scene 3 K</dt><dd>${n3(v.kPair)} <span class="qp-dim">same pair</span></dd></dl>`;
@@ -381,11 +420,15 @@ export function mountQpuPanel(el, { client = qpuClient, intervalMs = 5000 } = {}
     const act = b.dataset.act;
     if (act === "run") ctl.requestRun();
     else if (act === "cancel") ctl.cancel();
-    else if (act === "confirm") ctl.confirmRun();
-    else if (act === "recheck") ctl.recheck();
+    else if (act === "confirm") {
+      // Only a real user click, and not a double-click carried over from the Run button.
+      if (!e.isTrusted || Date.now() - ctl.view().confirmAt < CONFIRM_MIN_MS) return;
+      ctl.confirmRun();
+    } else if (act === "recheck") ctl.recheck();
     else if (act === "backends") ctl.showBackends();
   });
-  el.addEventListener("keydown", (e) => { if (e.key === "Escape") ctl.cancel(); });
+  // M2: focus is on BODY after the Run click, so listen on window while the confirm dialog is open.
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && ctl.phase() === "confirm") ctl.cancel(); });
   setInterval(() => { if (last && last.phase === "running") draw(ctl.view()); }, 1000);
   draw(ctl.view());
   return ctl;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { health, submit, pollStatus } from "./qpu.js";
-import { createQpuController, renderQpuPanel, MSG, RUN_LABEL, confirmText } from "./qpuPanel.js";
+import { health, submit, pollStatus, token } from "./qpu.js";
+import { createQpuController, renderQpuPanel, MSG, RUN_LABEL, confirmText, CONFIRM_LABEL, settingsLine } from "./qpuPanel.js";
 
 const jsonRes = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 const textRes = (status) => ({ ok: false, status, json: async () => { throw new SyntaxError("not json"); } });
@@ -39,10 +39,37 @@ describe("qpu client: submit", () => {
       .mockResolvedValueOnce(jsonRes(429, { error: "budget" }))
       .mockResolvedValueOnce(jsonRes(200, { cached: true, job_id: "J0", hw_fidelity: 0.8 }));
     vi.stubGlobal("fetch", f);
-    expect(await submit("heart", 2, { confirm: true })).toMatchObject({ kind: "busy", job_id: "J1" });
+    expect(await submit("heart", 2, { confirm: true, token: "T" })).toMatchObject({ kind: "busy", job_id: "J1" });
     expect(JSON.parse(f.mock.calls[0][1].body)).toEqual({ slug: "heart", patient: 2, confirm: true });
-    expect(await submit("heart", 2, { confirm: true })).toMatchObject({ kind: "budget" });
-    expect(await submit("heart", 2, { confirm: true })).toMatchObject({ kind: "cached", hw_fidelity: 0.8 });
+    expect(f.mock.calls[0][1].headers).toEqual({ "Content-Type": "application/json", "X-QPU-Token": "T" });
+    expect(await submit("heart", 2, { confirm: true, token: "T" })).toMatchObject({ kind: "budget" });
+    expect(await submit("heart", 2, { confirm: true, token: "T" })).toMatchObject({ kind: "cached", hw_fidelity: 0.8 });
+  });
+  it("refuses without a click token and makes no request", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    await expect(submit("heart", 0, { confirm: true })).rejects.toThrow(/token/);
+    await expect(submit("heart", 0, { confirm: true, token: "" })).rejects.toThrow(/token/);
+    expect(f).not.toHaveBeenCalled();
+  });
+  it("sends run_id only when given", async () => {
+    const f = vi.fn(async () => jsonRes(200, { job_id: "J" }));
+    vi.stubGlobal("fetch", f);
+    await submit("heart", 1, { confirm: true, token: "T", runId: "abc123" });
+    await submit("heart", 1, { confirm: true, token: "T", runId: null });
+    expect(JSON.parse(f.mock.calls[0][1].body)).toEqual({ slug: "heart", patient: 1, confirm: true, run_id: "abc123" });
+    expect(JSON.parse(f.mock.calls[1][1].body)).toEqual({ slug: "heart", patient: 1, confirm: true });
+  });
+  it("token() GETs /api/qpu/token and maps failures", async () => {
+    const f = vi.fn()
+      .mockResolvedValueOnce(jsonRes(200, { token: "abc", expires_in: 30 }))
+      .mockResolvedValueOnce(jsonRes(403, { error: "Refused: headless" }))
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    vi.stubGlobal("fetch", f);
+    expect(await token()).toEqual({ ok: true, token: "abc" });
+    expect(f.mock.calls[0][0]).toBe("/api/qpu/token");
+    expect(await token()).toEqual({ ok: false, error: "Refused: headless" });
+    expect(await token()).toEqual({ ok: false, error: "server-down" });
   });
 });
 
@@ -93,6 +120,7 @@ function fakeClient(over = {}) {
   const polls = [];
   const c = {
     health: vi.fn(async () => GOOD),
+    token: vi.fn(async () => ({ ok: true, token: "T1" })),
     submit: vi.fn(async () => ({ kind: "submitted", job_id: "J1", backend: "ibm_fake", pending_jobs: 4, partner: 1, ideal_fidelity: 0.95, submitted_at: 1000 })),
     pollStatus: vi.fn((jobId, opts) => new Promise((resolve, reject) => {
       polls.push({ jobId, opts, resolve });
@@ -134,7 +162,8 @@ describe("qpu panel controller (free-tier guards)", () => {
     ctl.confirmRun(); // double click
     await flush();
     expect(client.submit).toHaveBeenCalledTimes(1);
-    expect(client.submit).toHaveBeenCalledWith("heart", 0, { confirm: true });
+    expect(client.submit).toHaveBeenCalledWith("heart", 0, { confirm: true, runId: null, token: "T1" });
+    expect(client.token).toHaveBeenCalledTimes(1);
     expect(ctl.view().phase).toBe("running");
     expect(client.pollStatus).toHaveBeenCalledTimes(1);
   });
@@ -223,7 +252,7 @@ describe("qpu panel controller (free-tier guards)", () => {
     ctl2.activate(sel(0));
     await flush();
     ctl2.requestRun(); ctl2.confirmRun();
-    await flush();
+    await flush(12); // token + submit + health
     expect(ctl2.view().phase).toBe("unavailable");
     expect(ctl2.view().messages).toContain("QPU budget for this session used (3/3)");
   });
@@ -236,8 +265,11 @@ describe("qpu panel controller (free-tier guards)", () => {
     expect(renderQpuPanel(ctl.view())).toContain(RUN_LABEL);
     expect(renderQpuPanel(ctl.view())).toContain("0/3");
     ctl.requestRun();
-    expect(renderQpuPanel(ctl.view())).toContain(confirmText(1024, 60));
-    expect(confirmText(1024, 60)).toBe("This sends 1 circuit × 1024 shots to a real IBM QPU and uses free-tier time (~seconds, capped at 60 s). Continue?");
+    expect(renderQpuPanel(ctl.view())).toContain(confirmText({ patient: 0, partner: 1, shots: 1024, capS: 60 }));
+    expect(confirmText({ label: "Heart Disease", patient: 16, partner: 64 }))
+      .toBe("Send Heart Disease test patient #16 vs training #64 to a real IBM QPU (1 circuit × 1024 shots, ≤60 s of free-tier time)?");
+    expect(renderQpuPanel(ctl.view())).toContain(`data-act="confirm">${CONFIRM_LABEL}<`);
+    expect(CONFIRM_LABEL).toBe("Send to IBM");
     ctl.confirmRun();
     await flush();
     const v = ctl.view();
@@ -257,5 +289,89 @@ describe("qpu panel controller (free-tier guards)", () => {
     const html = renderQpuPanel(ctl.view());
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img");
+  });
+});
+
+// ------------------------------------------------- config-aware runs + hardening (final fix wave)
+describe("qpu panel: runs, tokens, disabled states", () => {
+  const SETT = { n_qubits: 3, feature_map: "ZZFeatureMap", reps: 2, entanglement: "linear", kernel_bandwidth: 0.1 };
+
+  it("passes runId to submit and keys results per run (static vs Custom run never cross)", async () => {
+    const client = fakeClient({ submit: vi.fn(async () => ({ kind: "cached", job_id: "J0", hw_fidelity: 0.9, ideal_fidelity: 0.99, partner: 1 })) });
+    const ctl = createQpuController({ client });
+    ctl.activate({ ...sel(0), runId: "abc123", settings: SETT });
+    await flush();
+    ctl.requestRun(); ctl.confirmRun();
+    await flush();
+    expect(client.submit).toHaveBeenCalledWith("heart", 0, { confirm: true, runId: "abc123", token: "T1" });
+    expect(ctl.view().result).toMatchObject({ hw_fidelity: 0.9 });
+    ctl.activate({ ...sel(0), runId: null, settings: SETT }); // static data, same slug/patient
+    await flush();
+    expect(ctl.view().phase).toBe("ready");
+    expect(ctl.view().result).toBeNull();
+    ctl.activate({ ...sel(0), runId: "abc123", settings: SETT });
+    await flush();
+    expect(ctl.view().phase).toBe("done");
+  });
+
+  it("no token -> no submit; never auto-retries on busy/budget/5xx/server-down", async () => {
+    const noTok = fakeClient({ token: vi.fn(async () => ({ ok: false, error: "Refused: headless browsers cannot submit QPU jobs." })) });
+    const c0 = createQpuController({ client: noTok });
+    c0.activate(sel(0)); await flush();
+    c0.requestRun(); c0.confirmRun(); await flush();
+    expect(noTok.submit).not.toHaveBeenCalled();
+    expect(c0.view().phase).toBe("failed");
+    expect(c0.view().error).toMatch(/headless/);
+
+    for (const r of [{ kind: "busy", job_id: "X" }, { kind: "budget", error: "b" }, { kind: "error", status: 502, error: "e" }, { kind: "server-down" }]) {
+      const client = fakeClient({ submit: vi.fn(async () => r) });
+      const ctl = createQpuController({ client, intervalMs: 1 });
+      ctl.activate(sel(0)); await flush();
+      ctl.requestRun(); ctl.confirmRun(); await flush(12);
+      ctl.activate(sel(1)); ctl.activate(sel(0)); ctl.deactivate(); await flush(12);
+      expect(client.submit).toHaveBeenCalledTimes(1);
+      expect(client.token).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("a disabled selection (custom patient / fixture) shows the reason, a disabled Run button and never submits", async () => {
+    const client = fakeClient();
+    const ctl = createQpuController({ client });
+    ctl.activate({ ...sel(0), disabled: "Dev fixture data (?fixture=…) is not a live run" });
+    await flush();
+    const v = ctl.view();
+    expect(v.phase).toBe("disabled");
+    const html = renderQpuPanel(v);
+    expect(html).toContain("is not a live run");
+    expect(html).toContain(`<button class="qp-btn" disabled>${RUN_LABEL}</button>`);
+    expect(html).not.toContain('data-act="run"');
+    expect(ctl.requestRun()).toBe(false);
+    ctl.confirmRun(); await flush();
+    expect(client.submit).not.toHaveBeenCalled();
+    expect(client.health).not.toHaveBeenCalled();
+    ctl.activate(sel(0)); await flush(); // same key, now enabled -> checks health
+    expect(ctl.view().phase).toBe("ready");
+  });
+
+  it("shows the active settings in the subtitle", async () => {
+    expect(settingsLine(SETT)).toBe("3 qubits · ZZ · d2 · linear · s=0.1");
+    expect(settingsLine({ ...SETT, n_qubits: 4, feature_map: "PauliFeatureMap", kernel_bandwidth: 0.3 })).toBe("4 qubits · Pauli · d2 · linear · s=0.3");
+    const ctl = createQpuController({ client: fakeClient() });
+    ctl.activate({ ...sel(0), settings: SETT, runId: "abc" });
+    await flush();
+    expect(renderQpuPanel(ctl.view())).toContain("3 qubits · ZZ · d2 · linear · s=0.1 · Custom run");
+  });
+
+  it("showBackends does not redraw after the panel moved on (M11)", async () => {
+    let resolve;
+    const client = fakeClient({ backends: vi.fn(() => new Promise((r) => { resolve = r; })) });
+    const onChange = vi.fn();
+    const ctl = createQpuController({ client, onChange });
+    ctl.activate(sel(0)); await flush();
+    ctl.showBackends();
+    ctl.deactivate();
+    const n = onChange.mock.calls.length;
+    resolve({ ok: true, rows: [] }); await flush();
+    expect(onChange.mock.calls.length).toBe(n);
   });
 });

@@ -188,7 +188,7 @@ export default function createScene(ctx) {
     );
     grid.position.set(x, (BAR_Y[0] + 0.45 + AXIS_Y) / 2, -0.2);
     p2.add(grid);
-    const t = textSprite(`${int(10 ** e)} s`, { height: 0.15, color: "#94a3b8" });
+    const t = textSprite(tickLabel(e), { height: 0.15, color: "#94a3b8" });
     t.position.set(x, AXIS_Y - 0.22, 0);
     p2.add(t);
   }

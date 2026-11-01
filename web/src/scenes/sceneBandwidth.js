@@ -51,6 +51,11 @@ const regimeHtml = (r) => `<b style="color:${REGIME_COLOUR[r.key] || "#e5e7eb"}"
 
 export default function createScene(ctx) {
   const slug = ctx.slug || (ctx.data && ctx.data.slug);
+  // M9: the sweep is exported for the default settings; say so on a Custom run.
+  const runS = ctx.data && ctx.data.custom_run && ctx.data.settings ? ctx.data.settings.kernel_bandwidth : null;
+  const customNote = ctx.data && ctx.data.custom_run
+    ? `<div style="margin-top:2px;font-size:12px;color:#fbbf24">Precomputed for the default settings${runS != null ? ` (your Custom run uses s = ${runS})` : ""}.</div>`
+    : "";
   const scene = new THREE.Scene();
   addLights(scene);
   const floor = new THREE.GridHelper(9, 18, 0x334155, 0x1e293b);
@@ -375,6 +380,7 @@ export default function createScene(ctx) {
       let html = `<div style="font-size:14px"><b>Kernel Bandwidth Lab</b> · Part 1: the quantum kernel matrix as a landscape · `
         + `${N} of ${nTrain} training patients, sorted <b style="color:${hex(PALETTE.healthy)}">healthy</b> → <b style="color:${hex(PALETTE.sick)}">disease</b> · height &amp; brightness = K`;
       html += `<div style="margin-top:3px">bandwidth s (largest → smallest): ${chips(cur)}${ms.mix < 1 && ms.index > 0 ? ` <span style="color:#94a3b8">morphing ${fmtS(ms.from)} → ${fmtS(ms.to)}</span>` : ""}</div>`;
+      html += customNote;
       if (grow > 0.3) {
         html += `<div style="margin-top:3px"><b>s = ${fmtS(cur)}</b>${cur === d.default ? ` <span style="color:#94a3b8">(default)</span>` : ""} · ${regimeHtml(r)}${r.text.slice(r.short.length)}</div>`;
         html += `<div style="margin-top:2px">mean off-diagonal K = <b>${f(dg.kernel_mean, 3)}</b> · variance <b>${f(dg.kernel_var, 4)}</b> · kernel-target alignment <b>${f(dg.alignment, 3)}</b> <span style="color:#94a3b8">(all ${nTrain} training patients; too sharp below 0.15, too blurred above 0.85)</span></div>`;
@@ -392,6 +398,7 @@ export default function createScene(ctx) {
       if (sw.def) parts.push(`QSVC CV accuracy at default s = ${fmtS(sw.def.bandwidth)}: <b>${pct1(sw.def.accuracy)}</b> ± ${pct1(sw.def.accuracy_std)}`);
       if (rowMax) parts.push(`at s = ${fmtS(sMax)} (unscaled): <b>${pct1(rowMax.accuracy)}</b>`);
       html += `<div style="margin-top:3px">${parts.join(" · ")}</div>`;
+      html += customNote;
       html += `<div style="margin-top:2px;font-size:12px;color:#94a3b8"><span style="color:${hex(PALETTE.quantum)}">■</span> bars = QSVC CV accuracy (whisker ± 1 std)`
         + (t >= AUC0 ? ` · <span style="color:${hex(PALETTE.quantum2)}">●</span> dots = QSVC CV ROC-AUC` : "")
         + (t >= RBF0 ? ` · <span style="color:${hex(PALETTE.classical)}">▬</span> plane / dashed line = RBF SVM accuracy / ROC-AUC` : "") + `</div>`;

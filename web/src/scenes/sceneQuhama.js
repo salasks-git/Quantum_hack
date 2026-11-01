@@ -5,7 +5,7 @@ import {
   setOpacity, disposeTree, addLights,
 } from "./common.js";
 import { loadQuhama } from "../data.js";
-import { quhamaPatient, pickInputs, pct1 } from "../quhama.js";
+import { quhamaPatient, pickInputs, pct1, QUHAMA_MSG } from "../quhama.js";
 import { loadElite, eliteCheck } from "../elite.js";
 import { buildElitePart, E_STOPS, E_DURATION } from "./eliteParts.js";
 
@@ -160,7 +160,7 @@ export default function createScene(ctx) {
   Promise.allSettled([loadQuhama(data.slug), loadElite(data.slug)]).then(([rq, re]) => {
     if (disposed) return;
     if (rq.status === "rejected") { status = "error"; errMsg = rq.reason.message; }
-    else if (custom) { status = "error"; errMsg = "QuHaMA needs a precomputed test patient; a custom patient has no exported QuHaMA breakdown"; }
+    else if (custom) { status = "error"; errMsg = QUHAMA_MSG.custom; }
     else {
       const r = quhamaPatient(rq.value, data, ctx.patient);
       if (!r.ok) { status = "error"; errMsg = r.msg; }

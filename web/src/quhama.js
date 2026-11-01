@@ -22,12 +22,19 @@ export function pickInputs(values, max = MAX_INPUTS) {
  * The QuHaMA breakdown for test patient `i`, checked against the main tour data
  * (same index as `data.test[]`). Returns { ok: true, row, ... } or { ok: false, msg }.
  */
+export const QUHAMA_MSG = {
+  custom: "QuHaMA is precomputed for the real test patients: pick a real patient.",
+  customRun: "QuHaMA is precomputed for the default settings: Reset to precomputed.",
+};
+
 export function quhamaPatient(q, data, i) {
   if (!q || !Array.isArray(q.test) || !q.metrics || !q.architecture) {
     return { ok: false, msg: "QuHaMA data is missing or malformed." };
   }
   const row = q.test[i];
   const main = data && data.test && data.test[i];
+  if (main && main.label == null) return { ok: false, msg: QUHAMA_MSG.custom };      // I5
+  if (data && data.custom_run) return { ok: false, msg: QUHAMA_MSG.customRun };
   if (!row || !main || q.test.length !== data.test.length || row.label !== main.label) {
     return { ok: false, msg: "QuHaMA data does not match this disease's test patients (re-export needed)." };
   }

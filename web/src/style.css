@@ -87,7 +87,7 @@ button:hover,select:hover{border-color:var(--accent)}
 .ds-stats summary{cursor:pointer;margin-bottom:8px;font-weight:600}
 .ds-err{background:#7f1d1d;color:#fecaca;padding:10px 14px;border-radius:6px;font-weight:600}
 /* Scene 6 live IBM QPU panel (bottom-right, step 6 only). The caption shifts into the space left of it. */
-#qpu-panel{position:absolute;right:12px;bottom:20px;z-index:3;width:320px;max-width:calc(100% - 24px);max-height:calc(100% - 40px);overflow-y:auto;background:rgba(7,11,22,.9);border:1px solid #3b3366;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.4;box-shadow:0 4px 24px rgba(0,0,0,.35)}
+#qpu-panel{position:absolute;right:12px;bottom:20px;z-index:3;width:320px;max-width:calc(100% - 24px);max-height:min(55%,calc(100% - 40px));overflow-y:auto;background:rgba(7,11,22,.9);border:1px solid #3b3366;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.4;box-shadow:0 4px 24px rgba(0,0,0,.35)}
 #qpu-panel[hidden]{display:none}
 #stage.qpu-on #caption{left:12px;right:356px;transform:none;margin:0 auto;width:fit-content;max-width:860px}
 #stage.qpu-on #badge{left:calc((100% - 344px) / 2)}

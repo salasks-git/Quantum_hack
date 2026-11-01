@@ -11,3 +11,4 @@ web/node_modules/
 web/dist/
 web/out/
 web/.qpu-cache.json
+web/.qpu-submit.log

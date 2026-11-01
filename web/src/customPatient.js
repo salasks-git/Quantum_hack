@@ -105,7 +105,8 @@ export function mountCustomPatient({ button, panel, getCtx, onPatient, onRevert,
   }
   function build() {
     const ctx = getCtx();
-    const base = ctx.data.test[ctx.patient].angles;
+    const p = ctx.data.test[ctx.patient] || ctx.data.test[0]; // C2: index may belong to the previous data
+    const base = p.angles;
     const n = (ctx.data.settings && ctx.data.settings.n_qubits) || base.length;
     box.innerHTML = "";
     sliders = [];
@@ -113,13 +114,13 @@ export function mountCustomPatient({ button, panel, getCtx, onPatient, onRevert,
       const v = Math.min(Math.PI, Math.max(0, base[k] ?? 0));
       const row = document.createElement("label");
       row.className = "cp-row";
-      row.innerHTML = `<span>x${k + 1}</span><input type="range" min="0" max="${Math.PI.toFixed(4)}" step="0.05" value="${v.toFixed(2)}"><output>${v.toFixed(2)}</output>`;
+      row.innerHTML = `<span>x${k + 1}</span><input type="range" min="0" max="3.15" step="0.05" value="${v.toFixed(2)}"><output>${v.toFixed(2)}</output>`;
       const input = row.querySelector("input"), out = row.querySelector("output");
       input.addEventListener("input", () => {
-        out.textContent = (+input.value).toFixed(2);
+        out.textContent = Math.min(Math.PI, +input.value).toFixed(2); // M6: 3.15 -> pi
         const c = getCtx();
         const key = c.data.run_id ? { run_id: c.data.run_id } : { slug: c.slug };
-        predictor.request({ ...key, angles: sliders.map((s) => +s.value) });
+        predictor.request({ ...key, angles: sliders.map((s) => Math.min(Math.PI, +s.value)) });
       });
       box.appendChild(row);
       sliders.push(input);

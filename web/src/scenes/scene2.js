@@ -173,6 +173,7 @@ export default function createScene(ctx) {
   const { data } = ctx;
   const pi = ctx.patient;
   const p = data.test[pi];
+  const youP = p.label == null ? "your custom patient" : `your patient #${pi}`; // M3
   const tAngles = data.train.angles;
   const tLabels = data.train.labels;
   const nTrain = tAngles.length;
@@ -419,10 +420,10 @@ export default function createScene(ctx) {
   const where = flat ? "plane" : nQ > 3 ? "slice" : "region";
   const cap = {
     intro: flat
-      ? `<b>The classical doctors</b> · 2 qubits → 2D: ${nTrain} training patients placed by their 2 angles on a flat plane (${okSpan("healthy")} / ${sickSpan("disease")}) · your patient #${pi} in white · two classical SVMs each draw a boundary across this plane`
+      ? `<b>The classical doctors</b> · 2 qubits → 2D: ${nTrain} training patients placed by their 2 angles on a flat plane (${okSpan("healthy")} / ${sickSpan("disease")}) · ${youP} in white · two classical SVMs each draw a boundary across this plane`
       : nQ > 3
-        ? `<b>The classical doctors</b> · ${nTrain} training patients placed by their first 3 of ${nQ} angles (${okSpan("healthy")} / ${sickSpan("disease")}) · ${sliceTxt} · your patient #${pi} in white (its own ${sub4} = ${n2(p.angles[3])}) · two classical SVMs each draw a boundary`
-        : `<b>The classical doctors</b> · ${nTrain} training patients placed by their 3 angles (${okSpan("healthy")} / ${sickSpan("disease")}) · your patient #${pi} in white · two classical SVMs each draw a boundary through this space`,
+        ? `<b>The classical doctors</b> · ${nTrain} training patients placed by their first 3 of ${nQ} angles (${okSpan("healthy")} / ${sickSpan("disease")}) · ${sliceTxt} · ${youP} in white (its own ${sub4} = ${n2(p.angles[3])}) · two classical SVMs each draw a boundary`
+        : `<b>The classical doctors</b> · ${nTrain} training patients placed by their 3 angles (${okSpan("healthy")} / ${sickSpan("disease")}) · ${youP} in white · two classical SVMs each draw a boundary through this space`,
     linear: hasPlane
       ? flat
         ? `<b>Doctor 1: ${cyan("Linear SVM")}</b> · one straight line across the plane: ${eq} · the arrow points to the side it calls disease · 2 qubits → 2D`

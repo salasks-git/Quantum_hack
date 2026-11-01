@@ -1,7 +1,8 @@
 """Export the Streamlit Tab 8 "Elite Hybrid Architectures" data per disease for the 3D tour.
 
-Mirrors qmed/ui/tab_quhama.py (read-only): QuHaMA via train_quhama(epochs_enc=50, epochs_gate=40),
-Sandwich via run_approach_2(X_*_std, n_qubits, epochs=30), CKTA via run_approach_3(X_*_q, n_qubits),
+Mirrors qmed/ui/tab_quhama.py (read-only). QuHaMA is NOT retrained here: it reuses the run already
+exported in <slug>.quhama.json (scripts/export_tour_extras.py), so scene 8 shows ONE set of QuHaMA
+numbers (if that file is missing it is produced with export_tour_extras.export_quhama first). Sandwich via run_approach_2(X_*_std, n_qubits, epochs=30), CKTA via run_approach_3(X_*_q, n_qubits),
 and the same five-row empirical leaderboard (QuHaMA, Sandwich, CKTA, RBF SVM, Linear SVM).
 Writes web/public/data/<slug>.elite.json. Test order equals <slug>.json test[].
 """
@@ -17,6 +18,7 @@ from sklearn.svm import SVC
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from approaches.approach_2 import run_approach_2  # noqa: E402
 from approaches.approach_3 import run_approach_3  # noqa: E402
@@ -25,12 +27,11 @@ from qmed.circuits import build_feature_map  # noqa: E402
 from qmed.config import DATASETS, DEFAULT_BANDWIDTH, RANDOM_STATE  # noqa: E402
 from qmed.data import prepare_data  # noqa: E402
 from qmed.models import build_quantum_kernel, fit_and_evaluate  # noqa: E402
-from qmed.quhama import train_quhama  # noqa: E402
+from export_tour_extras import export_quhama  # noqa: E402  (same QuHaMA run as <slug>.quhama.json)
 from sklearn.metrics.pairwise import rbf_kernel  # noqa: E402
 
 N_QUBITS, REPS, ENTANGLEMENT, VQC_ITER, MAX_SAMPLES = 3, 2, "linear", 35, 100
 FEATURE_MAP = "ZZFeatureMap"
-QUHAMA_EPOCHS = (50, 40)   # tab: epochs_enc=50, epochs_gate=40
 SANDWICH_EPOCHS = 30       # tab: epochs=30
 
 DESCRIPTIONS = {
@@ -83,7 +84,45 @@ def _test_rows(y_test, pred, prob, **extra):
     return rows
 
 
-def export_dataset(label: str, csv_path: Path) -> dict:
+def load_quhama(csv_path: Path, data, data_dir: Path) -> dict:
+    """The exported QuHaMA run (<slug>.quhama.json); produced once with export_quhama if missing."""
+    path = Path(data_dir) / f"{Path(csv_path).stem}.quhama.json"
+    if path.exists():
+        return json.loads(path.read_text())
+    qh = export_quhama(Path(csv_path), data)
+    path.write_text(json.dumps(qh, separators=(",", ":")))
+    return qh
+
+
+def quhama_section(qh: dict, y) -> dict:
+    """Elite 'quhama' block built from the <slug>.quhama.json run (no retraining)."""
+    t = qh["test"]
+    assert [int(r["label"]) for r in t] == [int(v) for v in y], "quhama.json test order != this split"
+    pred = np.array([int(r["pred"]) for r in t])
+    prob = np.array([float(r["p_final"]) for r in t])
+    s, b = qh["settings"], qh["branch_summary"]
+    return {
+        "description": DESCRIPTIONS["quhama"],
+        "architecture": {
+            "n_qubits": s["n_qubits"], "feature_map": s["feature_map"], "reps": s["reps"],
+            "entanglement": s["entanglement"],
+            "epochs_encoder": s["epochs_encoder"], "epochs_gating": s["epochs_gating"],
+            "loss_history_encoder": [_f(v) for v in qh["history"]["encoder"]],
+            "loss_history_gating": [_f(v) for v in qh["history"]["gating"]],
+            "mean_w_quantum": _f(b["mean_w_quantum"]), "mean_w_classical": _f(b["mean_w_classical"]),
+            "source": f"{qh['slug']}.quhama.json",
+        },
+        "test": _test_rows(y, pred, prob,
+                           p_classical=[_f(r["p_classical"]) for r in t],
+                           p_quantum=[_f(r["p_quantum"]) for r in t],
+                           w_classical=[_f(r["w_classical"]) for r in t],
+                           w_quantum=[_f(r["w_quantum"]) for r in t]),
+        "metrics": {**metrics_of(y, pred, prob),
+                    "time_s": _f(qh["timings"]["train_s"] + qh["timings"]["inf_s"])},
+    }
+
+
+def export_dataset(label: str, csv_path: Path, data_dir: Path = PROJECT_ROOT / "web/public/data") -> dict:
     # Determinism (script-level only; run_approach_* / train_quhama also seed 42 themselves).
     torch.manual_seed(42)
     np.random.seed(42)
@@ -96,13 +135,6 @@ def export_dataset(label: str, csv_path: Path) -> dict:
                            data.X_train_q, data.y_train, data.X_test_q)
     rbf = fit_and_evaluate(SVC(kernel="rbf", probability=True, random_state=RANDOM_STATE),
                            data.X_train_q, data.y_train, data.X_test_q)
-
-    # --- QuHaMA (tab: _cached_quhama_train) ---
-    fmap = build_feature_map(FEATURE_MAP, N_QUBITS, REPS, ENTANGLEMENT)
-    qh = train_quhama(data.X_train_std, data.y_train, data.X_test_std, y, n_qubits=N_QUBITS,
-                      feature_map=fmap, epochs_enc=QUHAMA_EPOCHS[0], epochs_gate=QUHAMA_EPOCHS[1])
-    bk = qh.breakdown_test
-    qh_time = qh.train_time + qh.inf_time  # tab latency: fmt_duration(quhama_res.execution_time)
 
     # --- Sandwich (tab: _cached_sandwich_train) ---
     sw = run_approach_2(data.X_train_std, data.y_train, data.X_test_std, y, n_qubits=N_QUBITS,
@@ -165,23 +197,7 @@ def export_dataset(label: str, csv_path: Path) -> dict:
     }
     assert abs(ckta["metrics"]["f2"] - ck["F2-Score"]) < 1e-9
 
-    quhama = {
-        "description": DESCRIPTIONS["quhama"],
-        "architecture": {
-            "n_qubits": N_QUBITS, "feature_map": FEATURE_MAP, "reps": REPS, "entanglement": ENTANGLEMENT,
-            "epochs_encoder": QUHAMA_EPOCHS[0], "epochs_gating": QUHAMA_EPOCHS[1],
-            "loss_history_encoder": [_f(v) for v in qh.loss_history_encoder],
-            "loss_history_gating": [_f(v) for v in qh.loss_history_gating],
-            "mean_w_quantum": _f(np.mean(bk["w_quantum"])), "mean_w_classical": _f(np.mean(bk["w_classical"])),
-        },
-        "test": _test_rows(y, np.asarray(bk["pred"]).astype(int), np.asarray(bk["p_final"]),
-                           p_classical=[_f(v) for v in bk["p_classical"]],
-                           p_quantum=[_f(v) for v in bk["p_quantum"]],
-                           w_classical=[_f(v) for v in bk["w_classical"]],
-                           w_quantum=[_f(v) for v in bk["w_quantum"]]),
-        "metrics": {**metrics_of(y, np.asarray(bk["pred"]).astype(int), np.asarray(bk["p_final"])),
-                    "time_s": _f(qh_time)},
-    }
+    quhama = quhama_section(load_quhama(csv_path, data, data_dir), y)
 
     def row(model, family, key, m):
         return {"model": model, "key": key, "family": family, **{k: m[k] for k in
@@ -213,7 +229,7 @@ def main(out_dir: Path = PROJECT_ROOT / "web/public/data") -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     for label, csv_path in DATASETS.items():
         t0 = time.time()
-        result = export_dataset(label, csv_path)
+        result = export_dataset(label, csv_path, out_dir)
         path = out_dir / f"{result['slug']}.elite.json"
         path.write_text(json.dumps(result, separators=(",", ":")))
         print(f"wrote {path} ({path.stat().st_size / 1024:.0f} KB) in {time.time() - t0:.0f}s", flush=True)

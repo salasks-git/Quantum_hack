@@ -47,6 +47,8 @@ export default function createScene(ctx) {
   const { data } = ctx;
   const pi = ctx.patient;
   const p = data.test[pi];
+  const youP = p.label == null ? "your custom patient" : `your patient #${pi}`; // M3
+  const psiP = p.label == null ? "you" : pi;
   const kTest = data.qsvc.kernel_test[pi];
   const kTrain = data.qsvc.kernel_train;
   const tAngles = data.train.angles;
@@ -202,8 +204,8 @@ export default function createScene(ctx) {
   const firstLayer = "<i>spheres show the first encoding layer only; K comes from the full entangling circuit</i>";
   const nearSick = near.filter((j) => tLabels[j] === 1).length;
   const cap = {
-    pairA: `<b>Quantum similarity</b> · your patient #${pi} vs training patient #${match}, the most similar of ${nTrain} · comparing their encoded states… · ${firstLayer}`,
-    pairB: `<b>Quantum similarity</b> · your patient #${pi} vs training patient #${match}, the most similar of ${nTrain} · K = |⟨ψ<sub>${pi}</sub>|ψ<sub>${match}</sub>⟩|² = <b>${n3(K)}</b> · #${match}'s actual diagnosis: <b>${lab(matchSick)}</b> · ${firstLayer}`,
+    pairA: `<b>Quantum similarity</b> · ${youP} vs training patient #${match}, the most similar of ${nTrain} · comparing their encoded states… · ${firstLayer}`,
+    pairB: `<b>Quantum similarity</b> · ${youP} vs training patient #${match}, the most similar of ${nTrain} · K = |⟨ψ<sub>${psiP}</sub>|ψ<sub>${match}</sub>⟩|² = <b>${n3(K)}</b> · #${match}'s actual diagnosis: <b>${lab(matchSick)}</b> · ${firstLayer}`,
     web: `<b>The quantum kernel web</b> · ${nTrain} training patients placed by their ${
       flat ? "2 qubit angles on a flat plane (2 qubits → 2D)" : nQ > 3 ? `first 3 of ${nQ} qubit angles (x₄ isn't drawn; K uses all ${nQ} qubits)` : "3 qubit angles"
     } (${okSpan("healthy")} / ${sickSpan("disease")}) · each is joined to its 3 most similar · brighter thread = higher K`,

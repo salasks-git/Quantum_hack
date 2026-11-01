@@ -11,7 +11,7 @@ export const OPTIONS = {
   vqc_iter: { min: 15, max: 75, step: 5 },
 };
 const FALLBACK = { max_samples: 100, n_qubits: 3, feature_map: "ZZFeatureMap", reps: 2, entanglement: "linear", kernel_bandwidth: 1.0, vqc_iter: 35 };
-export const HELPER_MSG = "Live retraining needs the local helper. Start it with `python scripts/qpu_server.py`, then reload. The tour keeps working on the precomputed data.";
+export const HELPER_MSG = "Live retraining needs the local helper. Start it with: venv/bin/python scripts/qpu_server.py, then reload. The tour keeps working on the precomputed data.";
 
 const snapList = (list, v, d) => (list.includes(v) ? v : d);
 const snapRange = (r, v, d) => (Number.isFinite(v) && v >= r.min && v <= r.max && (v - r.min) % r.step === 0 ? v : d);
@@ -171,7 +171,7 @@ export function mountSettingsDrawer({ button, container, badge, getData, getSlug
       bar.firstChild.style.width = "100%";
       onApply(data);
       setBadge(badgeText(sett));
-      if (Number(sett.n_qubits) !== 3) onToast("2/4-qubit runs: scenes 1–3 adapt after the next update");
+      if (Number(sett.n_qubits) === 4) onToast("4 qubits: scenes 1–3 show a 3D slice (x₄ fixed)");
     } catch (e) {
       if (e && e.name === "AbortError") return;
       prog.hidden = true;

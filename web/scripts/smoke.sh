@@ -4,6 +4,9 @@ set -u
 cd "$(dirname "$0")/.."
 CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 PORT=4317
+# Never proxy smoke pages to the presenter's real helper (8765): default to an unused port.
+export QMED_HELPER_PORT="${QMED_HELPER_PORT:-8799}"
+[ "$QMED_HELPER_PORT" = "8765" ] && { echo "refusing: QMED_HELPER_PORT=8765 is the real helper"; exit 1; }
 # --- step range derives from the step table in src/main.js (override with STEPS=n) ---
 STEPS="${STEPS:-$(node -e 'const m=require("fs").readFileSync("src/main.js","utf8").match(/const STEP_FACTORIES = \[([^\]]*)\]/);console.log(m?m[1].split(",").filter((x)=>x.trim()).length:0)')}"
 [ "$STEPS" -ge 1 ] 2>/dev/null || { echo "could not derive step count from src/main.js"; exit 1; }

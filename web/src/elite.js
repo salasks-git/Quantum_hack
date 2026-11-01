@@ -42,6 +42,7 @@ export function eliteCheck(e, data) {
       return { ok: false, msg: "Elite Hybrid data is missing or malformed." };
     }
   }
+  if (data && data.custom_run) return { ok: false, msg: "Elite Hybrid results are precomputed for the default settings: Reset to precomputed." };
   const real = realTest(data);
   for (const k of ELITE_KEYS) {
     const t = e.approaches[k].test;
