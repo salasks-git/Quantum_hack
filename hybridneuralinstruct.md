@@ -306,6 +306,7 @@ All 6 approaches were systematically evaluated across all **6 clinical disease d
 4. **Pima Indians Diabetes (Endocrinology):** 768 patients, 8 features, Tested Positive=1.
 5. **Vertebral Column (Orthopedics):** 310 patients, 6 features, Biomechanical Abnormality=1.
 6. **Acute Inflammations (Nephrology):** 120 patients, 6 features, Urinary Inflammation=1.
+7. **Maternal Health Risk (Obstetrics / Gynecology):** 1,014 patients, 6 features, High/Mid Risk=1.
 
 ### Empirical Benchmark Results:
 
@@ -369,26 +370,36 @@ All 6 approaches were systematically evaluated across all **6 clinical disease d
 | **Approach 5: Sandwich HQNN** | **1.000** | **1.000** | **1.000** | **1.000** | **1.000** | **0.23 s** |
 | **Approach 6: Q-CKTA Hybrid** | **1.000** | **1.000** | **1.000** | **1.000** | **1.000** | **0.18 s** |
 
+#### 7. Maternal Health Risk (Obstetrics / Gynecology — $N=100, d=6, n=3$ qubits)
+| Approach | Accuracy | $F_2$-Score | Precision | Recall | ROC-AUC | Latency |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Approach 5: Sandwich HQNN** 🏆 | **0.880** | **0.735** | **0.833** | **0.714** | 0.770 | **0.22 s** |
+| **Approach 1: QuHaMA** | 0.840 | 0.606 | 0.800 | 0.571 | 0.730 | 19.21 s |
+| **Approach 6: Q-CKTA Hybrid** | 0.720 | 0.167 | 0.500 | 0.143 | **0.881** | 0.33 s |
+| *Classical Linear SVM (Baseline)* | *0.840* | *0.606* | *0.800* | *0.571* | *0.778* | *0.002 s* |
+| *Classical RBF SVM (Baseline)* | *0.760* | *0.323* | *0.667* | *0.286* | *0.937* | *0.001 s* |
+| *Pure QSVC (s=0.1)* | *0.760* | *0.323* | *0.667* | *0.286* | *0.706* | *0.20 s* |
+
 ---
 
-### 🌐 Overall Cross-Domain Summary (Averaged Across All 6 Datasets):
+### 🌐 Overall Cross-Domain Summary (Averaged Across All 7 Datasets):
 
 | Approach | Mean Accuracy | Mean $F_2$-Score | Mean Precision | Mean Sensitivity (Recall) | Mean ROC-AUC | Mean Latency | Overall Rank |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Approach 5: Neural-Quantum Sandwich HQNN** | **87.8%** | **0.830** | 85.2% | **83.1%** | **0.903** | **0.17 s** | **🥇 1st (Best Overall & Fastest)** |
-| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | 82.2% | 0.757 | **87.7%** | 76.5% | 0.781 | **0.23 s** | **🥈 2nd (Fastest Kernel)** |
-| **Approach 1: QuHaMA** | 82.0% | **0.773** | 79.1% | **77.9%** | **0.867** | 8.84 s | **🥉 3rd (Best Adaptive Gating)** |
-| **Approach 2: Dual-Reader Soft-Voting** | 81.3% | 0.740 | 87.3% | 74.6% | 0.836 | 3.30 s | 4th |
-| **Approach 3: Composite Mercer Kernel** | 79.0% | 0.764 | 76.0% | 76.8% | 0.839 | 3.37 s | 5th |
-| **Approach 4: Quantum Residual Learning** | 78.8% | 0.733 | 76.1% | 73.2% | 0.842 | 3.43 s | 6th |
+| **Approach 5: Neural-Quantum Sandwich HQNN** | **87.9%** | **0.816** | **84.9%** | **81.4%** | **0.884** | **0.18 s** | **🥇 1st (Best Overall & Fastest)** |
+| **Approach 1: QuHaMA** | 82.3% | **0.749** | 79.2% | **75.0%** | **0.847** | 10.32 s | **🥈 2nd (Best Adaptive Gating)** |
+| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | 80.7% | 0.673 | **82.3%** | 67.6% | 0.795 | **0.24 s** | **🥉 3rd (Fastest Kernel)** |
+| *Classical Linear SVM (Baseline)* | *82.7%* | *0.768* | *77.1%* | *78.3%* | *0.876* | *0.001 s* | Baseline |
+| *Classical RBF SVM (Baseline)* | *82.3%* | *0.730* | *75.7%* | *74.2%* | *0.858* | *0.001 s* | Baseline |
+| *Pure QSVC (s=0.1)* | *75.1%* | *0.663* | *69.5%* | *68.1%* | *0.705* | *0.118 s* | Pure QML |
 
 ---
 
 ## 🏆 Phase 6: Synthesis & Final Selection Recommendations
 
 1. **Overall Winner: Approach 5 (Neural-Quantum Sandwich HQNN)**
-   - **Performance:** **87.8% mean accuracy**, **0.830 mean $F_2$-score**, and **0.903 mean ROC-AUC**.
-   - **Speed:** Evaluates in **$0.17\text{ s}$**, over $20\times$ to $50\times$ faster than kernel statevector methods.
+   - **Performance:** **87.9% mean accuracy**, **0.816 mean $F_2$-score**, and **0.884 mean ROC-AUC**.
+   - **Speed:** Evaluates in **$0.18\text{ s}$**, over $20\times$ to $50\times$ faster than kernel statevector methods.
    - **Hardware Robustness:** The classical Post-Net functions as an adaptive readout filter that learns and subtracts physical gate/thermal calibration errors on NISQ QPUs.
 
 2. **Best for Clinical Explainability: Approach 1 (QuHaMA)**
@@ -417,12 +428,12 @@ To rigorously validate whether quantum integration provides a true clinical adva
 
 | Paradigm | Model Architecture | Mean Accuracy | Mean $F_2$-Score | Mean Precision | Mean Sensitivity (Recall) | Mean ROC-AUC | Mean Latency | Primary Strength / Failure Mode |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Hybrid** 🏆 | **Neural-Quantum Sandwich (HQNN)** | **87.8%** | **0.830** | 85.2% | **83.1%** | **0.903** | 0.17 s | **Highest accuracy & AUC; Post-Net absorbs QPU noise** |
-| **Classical** | **Classical RBF SVM** | 83.8% | 0.829 | **89.7%** | 82.6% | 0.844 | **0.001 s** | Ultra-fast inference; trapped in local Euclidean geometry |
-| **Classical** | **Classical Linear SVM** | 82.5% | **0.876** | 83.3% | **90.1%** | **0.901** | **0.001 s** | Fast convex baseline; cannot model non-linear parity |
-| **Hybrid** | **QuHaMA (Adaptive Gated)** | 82.0% | 0.773 | 79.1% | 77.9% | 0.867 | 8.84 s | **Best explainability; 100% precision on Breast Cancer** |
-| **Hybrid** | **Q-CKTA Bandwidth Hybrid** | 82.2% | 0.757 | 87.7% | 76.5% | 0.781 | 0.23 s | Automated bandwidth selection via target alignment |
-| **Pure Quantum** | **QSVC (`ZZFeatureMap`, $s=0.1$)** | 71.3% | 0.689 | 77.9% | 71.0% | 0.630 | 0.11 s | Captures non-local phase interference; suffers PCA loss |
+| **Hybrid** 🏆 | **Neural-Quantum Sandwich (HQNN)** | **87.9%** | **0.816** | **84.9%** | **81.4%** | **0.884** | **0.18 s** | **Highest accuracy & AUC; Post-Net absorbs QPU noise; beats classical on 5 of 7 datasets** |
+| **Classical** | **Classical Linear SVM** | 82.7% | 0.768 | 77.1% | 78.3% | 0.876 | **0.001 s** | Fast convex baseline; cannot model non-linear parity |
+| **Hybrid** | **QuHaMA (Adaptive Gated)** | 82.3% | 0.749 | 79.2% | 75.0% | 0.847 | 10.32 s | **Best explainability; 100% precision on Breast Cancer; beats classical on 3 datasets** |
+| **Classical** | **Classical RBF SVM** | 82.3% | 0.730 | 75.7% | 74.2% | 0.858 | **0.001 s** | Fast inference; trapped in local Euclidean geometry |
+| **Hybrid** | **Q-CKTA Bandwidth Hybrid** | 80.7% | 0.673 | 82.3% | 67.6% | 0.795 | 0.24 s | Automated bandwidth selection via target alignment; beats classical on Diabetes |
+| **Pure Quantum** | **QSVC (`ZZFeatureMap`, $s=0.1$)** | 75.1% | 0.663 | 69.5% | 68.1% | 0.705 | 0.12 s | Captures non-local phase interference; suffers Hilbert space concentration without neural hybrid |
 | **Pure Quantum** | **VQC (`RealAmplitudes` + COBYLA)** | 62.5% | 0.533 | 60.6% | 52.3% | 0.590 | 4.04 s | High expressibility; vulnerable to barren plateaus |
 
 ---

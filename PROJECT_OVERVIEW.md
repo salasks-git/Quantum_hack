@@ -14,7 +14,7 @@ Modern clinical diagnosis relies heavily on high-dimensional biomedical measurem
 **Q-Med** introduces an end-to-end, reproducible **Hybrid Quantum-Classical Diagnostic Platform** built on **Qiskit 1.x** and **Streamlit**. It investigates whether **Near-Term Intermediate-Scale Quantum (NISQ)** algorithms can offer representational advantages or diagnostic complementary value over classical statistical baselines when classifying multi-organ diseases.
 
 ### Key Innovations of the Proposed System:
-1. **Multi-Domain Clinical Benchmark:** Evaluates 6 distinct medical disciplines (Oncology, Neurology, Cardiology, Endocrinology, Orthopedics, and Nephrology) using standardized offline datasets.
+1. **Multi-Domain Clinical Benchmark:** Evaluates 7 distinct medical disciplines (Oncology, Neurology, Cardiology, Endocrinology, Orthopedics, Nephrology, and Obstetrics / Gynecology) using standardized offline datasets.
 2. **Phase-Ambiguity-Free Quantum Preprocessing:** A rigorous 3-stage data preparation pipeline (Standardization $\to$ PCA $\to$ $[0, \pi]$ Angle Scaling) tailored for the Bloch sphere.
 3. **Rigorous Apples-to-Apples Comparison:** All 4 models (Linear SVM, RBF SVM, QSVC, and VQC) are trained and tested on the exact same compressed representation, eliminating dimensionality bias.
 4. **Fidelity-Based Quantum Kernel Geometry:** QSVC computes inner products directly in a $2^n$-dimensional complex projective Hilbert space using Qiskit's `ComputeUncompute` state fidelity primitive.
@@ -253,7 +253,7 @@ flowchart TD
 
 ## 3. Multi-Domain Clinical Datasets
 
-Q-Med integrates five diverse, real-world medical datasets representing five organ systems. All datasets are cleaned, standardized to binary labels (`0 = Healthy / Benign`, `1 = Disease / Malignant`), and stored locally for offline autonomy in [`data/`](file:///Users/salas/Desktop/Health_quantum/Quantum_hack/data):
+Q-Med integrates seven diverse, real-world medical datasets representing seven distinct organ systems. All datasets are cleaned, standardized to binary labels (`0 = Healthy / Benign`, `1 = Disease / Malignant`), and stored locally for offline autonomy in [`data/`](file:///Users/salas/Desktop/Health_quantum/Quantum_hack/data):
 
 | Domain | Dataset | Size ($M$) | Features | Clinical Measurements | Target (1 = Positive) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -263,6 +263,7 @@ Q-Med integrates five diverse, real-world medical datasets representing five org
 | **Endocrinology** | **Pima Indians Diabetes** | 768 | 8 | Pregnancies, oral glucose tolerance test, diastolic BP, triceps skin fold, serum insulin, BMI, diabetes pedigree, age | Tested Diabetic Positive |
 | **Orthopedics** | **Vertebral Column 2C** | 310 | 6 | Pelvic incidence, pelvic tilt, lumbar lordosis angle, sacral slope, pelvic radius, degree of spondylolisthesis | Biomechanical Abnormality (Hernia / Spondylolisthesis) |
 | **Nephrology / Urology** | **Acute Inflammations** | 120 | 6 | Temperature, nausea, lumbar pain, urine pushing, micturition pains, burning urethra | Acute Bladder Inflammation |
+| **Obstetrics / Gynecology** | **Maternal Health Risk** | 1014 | 6 | Age, Systolic BP, Diastolic BP, blood glucose, body temperature, heart rate | High / Mid Maternal Health Risk |
 
 ---
 

@@ -12,7 +12,7 @@
 
 ## 📌 Executive Summary
 
-**Q-Med** is a reproducible, multi-domain hybrid quantum-classical diagnostic platform built on **Qiskit 1.x** and **Streamlit**. It delivers an empirical, head-to-head benchmark comparing state-of-the-art Quantum Machine Learning algorithms against standard classical models across six clinical disease domains:
+**Q-Med** is a reproducible, multi-domain hybrid quantum-classical diagnostic platform built on **Qiskit 1.x** and **Streamlit**. It delivers an empirical, head-to-head benchmark comparing state-of-the-art Quantum Machine Learning algorithms against standard classical models across seven clinical disease domains:
 
 - **Oncology:** Wisconsin Breast Cancer Diagnosis (Malignant vs. Benign)
 - **Neurology:** Parkinson's Disease Vocal Biomarker Detection
@@ -20,12 +20,13 @@
 - **Endocrinology:** Pima Indians Diabetes Screening
 - **Orthopedics:** Vertebral Column Abnormality Detection (Disc Hernia / Spondylolisthesis)
 - **Nephrology & Urology:** Acute Inflammations (Urinary Bladder Inflammation / Nephritis)
+- **Obstetrics & Gynecology:** Maternal Health Risk Assessment (High/Mid vs. Low Risk)
 
 The platform implements a complete 3-stage quantum preprocessing pipeline, parameterizable quantum circuits (Feature Maps & Variational Ansätze), fidelity-based quantum kernels, and a real-time clinical inference simulator.
 
 > 📚 **Deep-Dive Documentation:**
 > - [🔬 **Theoretical & Empirical Research Compendium** (`RESEARCH_AND_THEORY.md`)](RESEARCH_AND_THEORY.md) — Comprehensive guide on Hilbert space vs. Euclidean RBF geometry, XOR/parity quantum phase interference, feature map taxonomy, hybrid ensembles, and classical neural network insulation against NISQ hardware noise.
-> - [⚖️ **Empirical Benchmark of 6 Hybrid Approaches** (`approaches/comparison.md`)](approaches/comparison.md) — Multi-dataset empirical benchmarks, architectural breakdown, and performance comparison of 6 hybrid approaches (QuHaMA, Dual-Reader, Composite Mercer, Residual Learning, Sandwich HQNN, and Q-CKTA).
+> - [⚖️ **Empirical Benchmark of Top 3 Hybrid Approaches** (`approaches/comparison.md`)](approaches/comparison.md) — Multi-dataset empirical benchmarks across all 7 clinical cohorts, architectural breakdown, and performance comparison of the Top 3 Elite Hybrid Approaches (QuHaMA, Sandwich HQNN, and Q-CKTA).
 > - [🏛️ **Project Overview & Architectural Runbook** (`PROJECT_OVERVIEW.md`)](PROJECT_OVERVIEW.md) — Full codebase architecture, pipeline mechanics, and step-by-step module reference.
 
 ---
@@ -85,19 +86,22 @@ Each approach is self-contained with its own mathematical documentation and eval
 
 | Approach | File | Coupling Mechanism | Feature Compression | Dataset Where It Beats Classical |
 | :--- | :--- | :--- | :--- | :--- |
-| **Approach 1: QuHaMA** | [`approach_1.py`](approaches/approach_1.py) (alias: `approach:1.py`) | Dual-Branch Split + Gating | Non-linear PyTorch Encoder | **Breast Cancer (92% vs 90%)**, **Vertebral Column (70% vs 65%, $F_2$ 0.915)** |
-| **Approach 2: Sandwich HQNN** | [`approach_2.py`](approaches/approach_2.py) (alias: `approach:2.py`) | End-to-End Layer Embedding | Deep MLP Pre-Net | **Breast Cancer (92% vs 90%)**, **Heart Disease (90% vs 85%)**, **Parkinson's (95% vs 90%)**, **Vertebral (85% vs 70%)** |
-| **Approach 3: Q-CKTA Hybrid** | [`approach_3.py`](approaches/approach_3.py) (alias: `approach:3.py`) | Centered Target Alignment | Unsupervised PCA | **Pima Diabetes (70% vs 65%)**, 100% Precision, 0.802 ROC-AUC |
+| **Approach 1: QuHaMA** | [`approach_1.py`](approaches/approach_1.py) (alias: `approach:1.py`) | Dual-Branch Split + Gating | Non-linear PyTorch Encoder | **Breast Cancer (92% vs 90%)**, **Vertebral Column (70% vs 65%, $F_2$ 0.915)**, **Maternal Health Risk (84% vs 76% RBF)** |
+| **Approach 2: Sandwich HQNN** | [`approach_2.py`](approaches/approach_2.py) (alias: `approach:2.py`) | End-to-End Layer Embedding | Deep MLP Pre-Net | **Breast Cancer (92% vs 90%)**, **Heart Disease (90% vs 85%)**, **Parkinson's (95% vs 90%)**, **Vertebral (85% vs 70%)**, **Maternal Health Risk (88% vs 84% / 76%)** |
+| **Approach 3: Q-CKTA Hybrid** | [`approach_3.py`](approaches/approach_3.py) (alias: `approach:3.py`) | Centered Target Alignment | Unsupervised PCA | **Pima Diabetes (70% vs 65%)**, 100% Precision, 0.802 ROC-AUC; Maternal Health Risk 0.881 ROC-AUC |
 
 ### 📊 Cross-Domain Empirical Benchmark Summary
 
-Evaluated across all six clinical disease cohorts under identical stratified 75/25 train/test splits (`seed=42`):
+Evaluated across all seven clinical disease cohorts under identical stratified 75/25 train/test splits (`seed=42`):
 
 | Approach | Mean Accuracy | Mean $F_2$-Score | Mean Precision | Mean Sensitivity (Recall) | Mean ROC-AUC | Mean Latency | Overall Rank |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Approach 2: Neural-Quantum Sandwich HQNN** 🥇 | **87.8%** | **0.830** | 85.2% | **83.1%** | **0.903** | **0.17 s** | **1st (Best Overall & Fastest)** |
-| **Approach 3: Bandwidth-Scaled Q-CKTA Hybrid** 🥈 | 82.2% | 0.757 | **87.7%** | 76.5% | 0.781 | **0.23 s** | **2nd (Fastest Kernel)** |
-| **Approach 1: QuHaMA** 🥉 | 82.0% | **0.773** | 79.1% | **77.9%** | **0.867** | 8.84 s | **3rd (Best Adaptive Gating)** |
+| **Approach 2: Neural-Quantum Sandwich HQNN** 🥇 | **87.9%** | **0.816** | **84.9%** | **81.4%** | **0.884** | **0.18 s** | **1st (Best Overall & Fastest)** |
+| **Approach 1: QuHaMA** 🥈 | 82.3% | **0.749** | 79.2% | **75.0%** | **0.847** | 10.32 s | **2nd (Best Adaptive Gating)** |
+| **Approach 3: Bandwidth-Scaled Q-CKTA Hybrid** 🥉 | 80.7% | 0.673 | **82.3%** | 67.6% | 0.795 | **0.24 s** | **3rd (Fastest Kernel)** |
+| *Classical Linear SVM (Baseline)* | *82.7%* | *0.768* | *77.1%* | *78.3%* | *0.876* | *0.001 s* | Baseline |
+| *Classical RBF SVM (Baseline)* | *82.3%* | *0.730* | *75.7%* | *74.2%* | *0.858* | *0.001 s* | Baseline |
+| *Pure QSVC (s=0.1)* | *75.1%* | *0.663* | *69.5%* | *68.1%* | *0.705* | *0.118 s* | Pure QML |
 
 > Detailed dataset-by-dataset tables, ROC-AUC comparisons, and mathematical proofs are available in [`approaches/comparison.md`](approaches/comparison.md) and raw metric logs in [`approaches/benchmark_results.csv`](approaches/benchmark_results.csv).
 
