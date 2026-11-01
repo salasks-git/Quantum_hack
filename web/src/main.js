@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import "./style.css";
 import { loadIndex, loadDisease } from "./data.js";
 import { SceneManager } from "./sceneManager.js";
+import { mountDatasetExplorer } from "./datasetExplorer.js";
 import { renderLegend, mountLegendToggle } from "./legend.js";
 import scene1 from "./scenes/scene1.js";
 import scene2 from "./scenes/scene2.js";
@@ -41,6 +42,9 @@ new ResizeObserver(resize).observe(stage); // top-bar wrap, error banner, window
 function showError(msg) { const e = $("error"); e.textContent = msg; e.hidden = false; }
 function clearError() { $("error").hidden = true; }
 
+// --- dataset explorer overlay ---
+const datasetExplorer = mountDatasetExplorer({ button: $("dataset-btn"), container: $("dataset-overlay"), getSlug: () => state.slug });
+if (params.get("dataset") === "1") datasetExplorer.setOpen(true);
 const legendToggle = mountLegendToggle($("legend-btn"), $("legend"), { storageKey: "qmed.legend.open" });
 function updateLegend() {
   const cur = manager.current;
@@ -86,6 +90,7 @@ async function selectDisease(slug) {
     $("disease").value = slug;
     fillPatients();
     rebuild();
+    datasetExplorer.refresh();
   } catch (e) {
     showError(e.message);
   }
