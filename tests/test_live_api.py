@@ -348,7 +348,8 @@ def test_default_settings_lazy_predict_reproduces_static_export(srv, small_run):
             for m in MODELS:
                 assert a["models"][m]["prob"] == pytest.approx(b["models"][m]["prob"], abs=1e-3)
                 assert a["models"][m]["pred"] == b["models"][m]["pred"]
-        for key in ("train", "qsvc", "vqc", "linear", "qpu", "feature_ranges"):
+        # "qpu" (transpiled gate counts/depth) and "timings" are environment-dependent (qiskit version / machine): excluded.
+        for key in ("train", "qsvc", "vqc", "linear", "feature_ranges"):
             assert js[key] == ref[key], key
     assert {k: v for k, v in js["settings"].items() if k != "max_samples"} == fresh["settings"]
 
