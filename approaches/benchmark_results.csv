@@ -17,3 +17,15 @@ Parkinson's Vocal Biomarkers (Neurology),Approach 3: Composite Mercer Kernel,0.9
 Parkinson's Vocal Biomarkers (Neurology),Approach 4: Quantum Residual Learning,0.9,0.974025974025974,0.8823529411764706,1.0,0.76,3.177119731903076
 Parkinson's Vocal Biomarkers (Neurology),Approach 5: Neural-Quantum Sandwich HQNN,0.95,0.9868421052631579,0.9375,1.0,0.8933333333333334,0.1325223445892334
 Parkinson's Vocal Biomarkers (Neurology),Approach 6: Bandwidth-Scaled Q-CKTA Hybrid,0.9,0.974025974025974,0.8823529411764706,1.0,0.84,0.21773457527160645
+Pima Indians Diabetes (Endocrinology),Approach 1: QuHaMA,0.6,0.16129,0.333333,0.142857,0.681319,7.162405
+Pima Indians Diabetes (Endocrinology),Approach 2: Dual-Reader Soft-Voting,0.7,0.172414,1.0,0.142857,0.747253,2.310015
+Pima Indians Diabetes (Endocrinology),Approach 3: Composite Mercer Kernel,0.6,0.30303,0.4,0.285714,0.637363,2.408952
+Pima Indians Diabetes (Endocrinology),Approach 4: Quantum Residual Learning,0.6,0.16129,0.333333,0.142857,0.725275,2.322273
+Pima Indians Diabetes (Endocrinology),Approach 5: Neural-Quantum Sandwich HQNN,0.65,0.3125,0.5,0.285714,0.78022,0.183223
+Pima Indians Diabetes (Endocrinology),Approach 6: Bandwidth-Scaled Q-CKTA Hybrid,0.7,0.172414,1.0,0.142857,0.802198,0.205429
+Vertebral Column (Orthopedics),Approach 1: QuHaMA,0.7,0.915493,0.684211,1.0,0.879121,7.677358
+Vertebral Column (Orthopedics),Approach 2: Dual-Reader Soft-Voting,0.65,0.902778,0.65,1.0,0.593407,2.664627
+Vertebral Column (Orthopedics),Approach 3: Composite Mercer Kernel,0.55,0.735294,0.625,0.769231,0.714286,2.672086
+Vertebral Column (Orthopedics),Approach 4: Quantum Residual Learning,0.5,0.671642,0.6,0.692308,0.714286,2.80653
+Vertebral Column (Orthopedics),Approach 5: Neural-Quantum Sandwich HQNN,0.85,0.909091,0.857143,0.923077,0.857143,0.149843
+Vertebral Column (Orthopedics),Approach 6: Bandwidth-Scaled Q-CKTA Hybrid,0.65,0.902778,0.65,1.0,0.197802,0.194702
