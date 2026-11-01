@@ -1,6 +1,6 @@
 """Benchmark and timing tables built from ``train_all_models`` results."""
 import pandas as pd
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, fbeta_score, precision_score, recall_score, roc_auc_score, confusion_matrix
 
 from qmed.config import MODEL_COMPLEXITY, RBF_SVM
 
@@ -14,12 +14,17 @@ def benchmark_table(results: dict, y_test) -> pd.DataFrame:
     rows = []
     for name, res in results.items():
         y_p = res["pred"]
+        cm = confusion_matrix(y_test, y_p)
+        fn_count = cm[1, 0] if cm.shape == (2, 2) else 0
+        f2 = fbeta_score(y_test, y_p, beta=2, zero_division=0)
         rows.append({
             "Model Architecture": name,
-            "Test Accuracy": f"{accuracy_score(y_test, y_p):.2%}",
+            "F2-Score (Clinical Target 🎯)": f"{f2:.3f}",
+            "Recall (Sensitivity)": f"{recall_score(y_test, y_p, zero_division=0):.3f}",
+            "Missed Diagnoses (FN)": int(fn_count),
             "F1-Score (Disease)": f"{f1_score(y_test, y_p, zero_division=0):.3f}",
             "Precision": f"{precision_score(y_test, y_p, zero_division=0):.3f}",
-            "Recall (Sensitivity)": f"{recall_score(y_test, y_p, zero_division=0):.3f}",
+            "Test Accuracy": f"{accuracy_score(y_test, y_p):.2%}",
             "ROC-AUC": f"{roc_auc_score(y_test, res['prob']):.3f}",
             "Compute Time": fmt_duration(res["total_time"]),
         })
