@@ -58,7 +58,8 @@ function showError(msg) { const e = $("error"); e.textContent = msg; e.hidden = 
 function clearError() { $("error").hidden = true; }
 
 // --- dataset explorer overlay ---
-const datasetExplorer = mountDatasetExplorer({ button: $("dataset-btn"), container: $("dataset-overlay"), getSlug: () => state.slug });
+const datasetExplorer = mountDatasetExplorer({ button: $("dataset-btn"), container: $("dataset-overlay"), getSlug: () => state.slug,
+  getData: () => state.base, isCustom: () => settingsDrawer.isCustom() }); // base = active data without a custom-patient row
 if (params.get("dataset") === "1") datasetExplorer.setOpen(true);
 const legendToggle = mountLegendToggle($("legend-btn"), $("legend"), { storageKey: "qmed.legend.open" });
 function updateLegend() {
