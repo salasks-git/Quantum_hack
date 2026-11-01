@@ -1,8 +1,36 @@
-"""Static configuration: dataset registry, UI option lists, model names."""
+import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
+ENV_FILE = PROJECT_ROOT / ".env"
+
+# Auto-load .env if present (works with or without python-dotenv)
+def _load_env_file(path: Path) -> None:
+    if not path.is_file():
+        return
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(path)
+    except ImportError:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    k, v = k.strip(), v.strip().strip("'\"")
+                    if k and k not in os.environ:
+                        os.environ[k] = v
+        except Exception:
+            pass
+
+_load_env_file(ENV_FILE)
+
+# IBM Quantum Platform API Token
+QISKIT_IBM_TOKEN = os.getenv("QISKIT_IBM_TOKEN", "")
+
 
 RANDOM_STATE = 42
 TEST_SIZE = 0.25

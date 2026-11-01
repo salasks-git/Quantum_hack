@@ -12,3 +12,5 @@ seaborn>=0.13.0
 streamlit>=1.32.0
 pylatexenc>=2.10
 qiskit-ibm-runtime>=0.20.0
+python-dotenv>=1.0.0
+
