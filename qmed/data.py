@@ -23,6 +23,8 @@ class PreparedData:
     y_test: np.ndarray
     pca: PCA
     prep_time: float       # seconds spent in this whole step
+    X_train_raw: np.ndarray = None # training patients, original units
+    X_train_std: np.ndarray = None # training patients, after StandardScaler
     X_test_raw: np.ndarray = None  # held-out patients, original units
     X_test_std: np.ndarray = None  # after StandardScaler
     X_test_pca: np.ndarray = None  # after PCA (before angle scaling)
@@ -87,11 +89,14 @@ def prepare_data(csv_path: Path, max_samples: int, n_qubits: int) -> PreparedDat
         X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
     )
     X_train_q, X_test_q, pca, X_test_std, X_test_pca = _angle_pipeline(X_train, X_test, n_qubits)
+    std_scaler = StandardScaler()
+    X_train_std = std_scaler.fit_transform(X_train)
 
     return PreparedData(
         df=df, feature_names=feature_names,
         X_train_q=X_train_q, X_test_q=X_test_q,
         y_train=y_train, y_test=y_test,
         pca=pca, prep_time=time.time() - t_start,
+        X_train_raw=X_train, X_train_std=X_train_std,
         X_test_raw=X_test, X_test_std=X_test_std, X_test_pca=X_test_pca,
     )

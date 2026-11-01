@@ -24,6 +24,7 @@
    - [4.2 Probabilistic Soft-Voting Ensemble (Active in Q-Med)](#42-probabilistic-soft-voting-ensemble-active-in-q-med)
    - [4.3 Geometric Composite Kernel Fusion (Mercer's Theorem)](#43-geometric-composite-kernel-fusion-mercers-theorem)
    - [4.4 Variational Co-Processor Loop (VQC)](#44-variational-co-processor-loop-vqc)
+   - [4.5 QuHaMA: Quantum-Hybrid Adaptive Multi-branch Architecture](#45-quhama-quantum-hybrid-adaptive-multi-branch-architecture)
 5. [Mitigating NISQ Hardware Noise: Classical Neural Network Insulation](#5-mitigating-nisq-hardware-noise-classical-neural-network-insulation)
    - [5.1 Physical Noise Profiles in Superconducting Transmons](#51-physical-noise-profiles-in-superconducting-transmons)
    - [5.2 Architecture A: The "Sandwich" Network (Classical $\to$ Quantum $\to$ Classical)](#52-architecture-a-the-sandwich-network-classical--quantum--classical)
@@ -325,6 +326,57 @@ In the Variational Quantum Classifier (VQC), the classical computer and quantum 
 
 1. **Quantum Task (QPU):** Executes the parameterized circuit $|\psi(\vec{x}, \vec{\theta})\rangle = W(\vec{\theta}) U_{\Phi}(\vec{x}) |0\rangle^{\otimes n}$ and measures expectation values of Pauli observables.
 2. **Classical Task (CPU):** Evaluates cross-entropy loss $\mathcal{L}(\vec{\theta})$ and computes the parameter update gradient using classical numerical optimizers (COBYLA, SPSA, or Adam).
+
+---
+
+### 4.5 QuHaMA: Quantum-Hybrid Adaptive Multi-branch Architecture
+
+The **QuHaMA** architecture extends standard hybrid models into an end-to-end adaptive multi-branch framework:
+
+```
+         Raw Patient Clinical Biomarkers x⃗ ∈ ℝᵈ
+                          │
+                          ▼
+            ┌───────────────────────────┐
+            │   Neural Encoder E(x⃗)     │
+            │  Linear(d, 16) → Tanh     │
+            └─────────────┬─────────────┘
+                          │ Compressed Latent Vector z⃗ ∈ ℝᵏ (k = n_qubits)
+            ┌─────────────┴─────────────┐
+            ▼                           ▼
+┌───────────────────────┐   ┌───────────────────────┐
+│ Classical Deep Head   │   │ Latent Angle Scaling  │
+│ Linear(k, 8) → ReLU   │   │ θ⃗ = (z⃗ + 1) · (π / 2) │
+│ Linear(8, 2) → Softmax│   └───────────┬───────────┘
+└───────────┬───────────┘               ▼
+            │               ┌───────────────────────┐
+            │               │ Quantum Circuit (PQC) │
+            │               │ ZZFeatureMap in 2ᵏ-D  │
+            │               └───────────┬───────────┘
+            │                           │
+       P_classical                 P_quantum
+            │                           │
+            └─────────────┬─────────────┘
+                          ▼
+          ┌───────────────────────────────┐
+          │  Adaptive Gating Meta-Network │
+          │       G(z⃗, P_c, P_q)          │
+          │   [w_classical, w_quantum]    │
+          └───────────────┬───────────────┘
+                          ▼
+         P_QuHaMA = w_c · P_c + w_q · P_q
+                          │
+                          ▼
+                 🩺 Final Diagnosis
+```
+
+1. **Feature Compression Backbone:** Rather than using linear PCA, a non-linear PyTorch neural encoder $E(\vec{x})$ compresses raw $d$-dimensional measurements into $k = n_{\text{qubits}}$ latent dimensions $\vec{z} \in [-1, 1]^k$.
+2. **Dual-Branch Pathways:**
+   - **Classical Deep Head:** Computes $P_{\text{classical}} = \text{Softmax}(\text{MLP}(\vec{z}))$, capturing dense Euclidean representations.
+   - **Quantum Circuit Branch:** Maps $\vec{z}$ into quantum rotation angles $\vec{\theta} = (\vec{z} + 1) \cdot \frac{\pi}{2} \in [0, \pi]^k$. A quantum circuit evaluates state fidelity or expectation values in $2^k$-dimensional Hilbert space to yield $P_{\text{quantum}}$.
+3. **Adaptive Gating Meta-Network:** An auxiliary neural network $G(\vec{z}, P_{\text{classical}}, P_{\text{quantum}})$ dynamically learns patient-specific gating weights:
+   $$[w_{\text{classical}}(\vec{x}), w_{\text{quantum}}(\vec{x})] = \text{Softmax}(\text{Linear}(k + 2, 2))$$
+   For prototypical, high-density patients, it assigns higher weight to the classical branch. For edge cases and non-local parity interactions, it automatically allocates greater weight to the quantum phase branch.
 
 ---
 

@@ -74,7 +74,7 @@ All datasets are automatically cleaned, labeled into standardized binary targets
 
 ## 🖥️ Streamlit Interactive UI Overview
 
-Launch the diagnostic dashboard (`streamlit run app.py`) to explore seven specialized modules:
+Launch the diagnostic dashboard (`streamlit run app.py`) to explore eight specialized modules:
 
 1. **📊 Tab 1 — Dataset & Quantum Preprocessing:**
    - Raw data inspection, class distribution metrics, and cumulative explained variance ratios.
@@ -103,6 +103,10 @@ Launch the diagnostic dashboard (`streamlit run app.py`) to explore seven specia
    - Gram-matrix heatmaps at three bandwidths (too sharp / your setting / too blurred), patients sorted by diagnosis.
    - Stratified 5-fold CV sweep of QSVC over $s \in \{0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1\}$: accuracy, ROC-AUC (from the SVM margin), and recall, with the classical RBF SVM as a reference line. Preprocessing is refit inside every fold.
    - Kernel diagnostics vs $s$: off-diagonal mean/variance (concentration) and centered kernel-target alignment.
+8. **🧠 Tab 8 — QuHaMA: Adaptive Neural-Quantum Architecture:**
+   - Multi-branch architecture with PyTorch Neural Encoder compressing raw clinical biomarkers into latent features for both a Classical Deep MLP Head and a Quantum Circuit Branch.
+   - Adaptive Gating Meta-Network that dynamically learns patient-specific weightage $[w_{\text{classical}}, w_{\text{quantum}}]$ to maximize clinical accuracy and $F_2$-score.
+   - Interactive patient inspector with real-time dynamic weight re-allocation.
 
 **Sidebar options:** dataset, cohort size, qubits, feature map, circuit depth, entanglement, **quantum kernel bandwidth $s$**, VQC iterations. Every option that affects training is part of the training cache key.
 

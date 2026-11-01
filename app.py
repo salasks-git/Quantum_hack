@@ -10,7 +10,7 @@ from qmed.config import DATASETS
 from qmed.data import PreparedData, prepare_data
 from qmed.models import train_all_models
 from qmed.ui import (
-    tab_bandwidth, tab_benchmarks, tab_circuits, tab_dataset, tab_ibm_hardware, tab_profiler, tab_simulator,
+    tab_bandwidth, tab_benchmarks, tab_circuits, tab_dataset, tab_ibm_hardware, tab_profiler, tab_quhama, tab_simulator,
 )
 from qmed.ui.sidebar import render_sidebar
 
@@ -57,7 +57,7 @@ with st.spinner(f"Simulating {cfg.n_qubits}-Qubit Hilbert Space on {cfg.dataset_
         cfg.kernel_bandwidth,
     )
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "📊 1. Dataset & Quantum Preprocessing",
     "⚛️ 2. Quantum Circuits & Kernel Matrix",
     "🏆 3. Classical vs Quantum Benchmarks",
@@ -65,6 +65,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🔬 5. IBM Quantum Hardware Latency (Real QPU)",
     "🩺 6. Live Patient Diagnostic Simulator",
     "🎚️ 7. Kernel Bandwidth Lab",
+    "🧠 8. QuHaMA: Adaptive Neural-Quantum Architecture",
 ])
 with tab1:
     tab_dataset.render(cfg, data)
@@ -80,3 +81,5 @@ with tab6:
     tab_simulator.render(cfg, data, results)
 with tab7:
     tab_bandwidth.render(cfg, data)
+with tab8:
+    tab_quhama.render(cfg, data, results)

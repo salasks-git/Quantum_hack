@@ -220,6 +220,14 @@ Quantum_hack/
 
 ---
 
+### 🧠 Tab 8: QuHaMA (Quantum-Hybrid Adaptive Multi-branch Architecture)
+- **Neural Compression Backbone:** PyTorch neural encoder compresses raw patient biomarkers into $k$ latent dimensions ($k = n_{\text{qubits}}$).
+- **Dual Branching:** Deep Classical MLP head predicts $P_{\text{classical}}$, while a parameterized quantum circuit evaluates latent angles in $2^k$-dimensional Hilbert space for $P_{\text{quantum}}$.
+- **Adaptive Gating Meta-Network:** Dynamically learns optimal patient-specific weightage $[w_{\text{classical}}, w_{\text{quantum}}]$ via backpropagation.
+- **Interactive Inspection:** Clinicians inspect per-patient weight distributions, loss curves, and test live diagnostic consensus with dynamic weight allocation.
+
+---
+
 ## 6. How to Run, Test, and Extend
 
 ### 6.1 Installation & Startup
