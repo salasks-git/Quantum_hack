@@ -7,6 +7,9 @@ SamplerV2 with 1024 shots. Binds 127.0.0.1 only. Never returns/logs credentials.
 
 Free-tier safeguards: explicit confirm flag, max_execution_time cap, one job in
 flight, per-run job budget, persistent result cache keyed by (slug, patient).
+
+Also serves the tour's live mode (scripts/live_api.py: retrain with settings, custom-patient
+predict; never contacts IBM) and GET /api/qpu/backends (lists IBM backends, no QPU time).
 """
 from __future__ import annotations
 
@@ -25,6 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+SCRIPTS_DIR = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "web" / "public" / "data"
 CACHE_PATH = ROOT / "web" / ".qpu-cache.json"
 QISKIT_ACCOUNTS_FILE = Path.home() / ".qiskit" / "qiskit-ibm.json"
@@ -168,7 +172,46 @@ def health() -> dict:
         "jobs_max": CONFIG["max_jobs"],
         "max_execution_time_s": MAX_EXECUTION_TIME_S,
         "shots": SHOTS,
+        "live": True,
     }
+
+
+def backends() -> list:
+    """List IBM backends (mirrors tab_ibm_hardware.py 'Query Active IBM Quantum Backends'). No QPU time."""
+    if not has_credentials():
+        raise ApiError(503, "No IBM credentials found. Set QISKIT_IBM_TOKEN in .env or save a Qiskit account "
+                            "for channel ibm_quantum_platform.")
+    try:
+        service = make_service()
+        out = []
+        for b in service.backends():
+            st = b.status()
+            out.append({"name": str(b.name), "operational": bool(st.operational),
+                        "num_qubits": int(b.num_qubits), "pending_jobs": int(st.pending_jobs)})
+        return out
+    except ApiError:
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise ApiError(502, f"Could not list IBM Quantum backends: {scrub(e)}")
+
+
+# ------------------------------------------------------------------ live mode
+def _live_api():
+    if str(SCRIPTS_DIR) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS_DIR))
+    import live_api
+    return live_api
+
+
+def live_call(name: str, *args):
+    la = _live_api()
+    try:
+        out = getattr(la, name)(*args)
+    except la.LiveError as e:
+        raise ApiError(e.code, e.message, **e.extra)
+    if isinstance(out, dict) and isinstance(out.get("error"), str):
+        out = {**out, "error": scrub(out["error"])}
+    return out
 
 
 def submit(body: dict) -> dict:
@@ -306,7 +349,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _run(self, fn):
         try:
-            self._send(200, fn())
+            out = fn()
+            code, obj = out if isinstance(out, tuple) else (200, out)
+            self._send(code, obj)
         except ApiError as e:
             self._send(e.code, {"error": scrub(e.message), **e.extra})
         except Exception as e:  # noqa: BLE001
@@ -319,18 +364,30 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/api/qpu/status":
             job = (parse_qs(u.query).get("job") or [""])[0]
             return self._run(lambda: status(job))
+        if u.path == "/api/qpu/backends":
+            return self._run(backends)
+        if u.path == "/api/live/train/status":
+            run = (parse_qs(u.query).get("run") or [""])[0]
+            return self._run(lambda: live_call("train_status", run))
+        m = re.fullmatch(r"/api/live/run/([0-9a-f]{1,64})\.json", u.path)
+        if m:
+            return self._run(lambda: live_call("run_json", m.group(1)))
         self._send(404, {"error": "Not found."})
 
     def do_POST(self):
         u = urlparse(self.path)
-        if u.path != "/api/qpu/submit":
+        routes = {"/api/qpu/submit": submit,
+                  "/api/live/train": lambda b: live_call("start_train", b),
+                  "/api/live/predict": lambda b: live_call("predict", b)}
+        fn = routes.get(u.path)
+        if fn is None:
             return self._send(404, {"error": "Not found."})
         try:
             n = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(min(n, 65536)) or b"{}")
         except Exception:
             return self._send(400, {"error": "Invalid JSON body."})
-        self._run(lambda: submit(body))
+        self._run(lambda: fn(body))
 
 
 def main(argv=None):
@@ -343,7 +400,7 @@ def main(argv=None):
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
     print(f"QPU helper listening on http://127.0.0.1:{a.port}  "
           f"(budget: {a.max_jobs} job(s) this run, {MAX_EXECUTION_TIME_S}s execution cap, {SHOTS} shots, "
-          f"1 in flight). Health does not contact IBM.", flush=True)
+          f"1 in flight). Health does not contact IBM. Live mode: /api/live/*.", flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
