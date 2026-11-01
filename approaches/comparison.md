@@ -1,13 +1,13 @@
 # ⚖️ Empirical & Architectural Comparison of Top 3 Quantum-Classical Hybrid Approaches
 
 **Qiskit Fall Fest 2026 · Quantum Hack Day Kochi | Challenge 02: Healthcare QML**  
-*Rigorous comparative evaluation of the Top 3 Elite Hybrid Quantum-Classical Architectures across 6 Clinical Disease Benchmarks.*
+*Rigorous comparative evaluation of the Top 3 Elite Hybrid Quantum-Classical Architectures across 7 Clinical Disease Benchmarks (including UCI Maternal Health Risk).*
 
 ---
 
 ## 📌 Executive Summary & Selection Rationale
 
-Following exhaustive benchmarking of 6 distinct hybrid architectural paradigms across all 6 clinical datasets in the repository, the suite was pruned to the **Top 3 Elite Approaches**. Every selected approach strictly satisfies the competition criterion: **competing with or surpassing both classical baselines (Classical Linear SVM and Classical RBF SVM) on at least one clinical dataset**.
+Following exhaustive benchmarking of 6 distinct hybrid architectural paradigms across all 7 clinical datasets in the repository, the suite was pruned to the **Top 3 Elite Approaches**. Every selected approach strictly satisfies the competition criterion: **competing with or surpassing both classical baselines (Classical Linear SVM and Classical RBF SVM) on at least one clinical dataset**.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -17,11 +17,13 @@ Following exhaustive benchmarking of 6 distinct hybrid architectural paradigms a
 ├───────────────────┼──────────────────────────────────┼─────────────────────────────────────────┤
 │ 1. QuHaMA         │ Multi-Branch + Meta-Gating       │ Wisconsin Breast Cancer (92% vs 90%)    │
 │                   │                                  │ Vertebral Column (70% vs 65%, F2 0.915) │
+│                   │                                  │ Maternal Health Risk (84% vs 76% RBF)   │
 ├───────────────────┼──────────────────────────────────┼─────────────────────────────────────────┤
 │ 2. Sandwich HQNN  │ End-to-End Layer Embedding       │ Breast Cancer (92% vs 90%)              │
 │                   │ (Pre-Net → QPU → Post-Net)       │ Heart Disease (90% vs 85%, F2 0.957)    │
 │                   │                                  │ Parkinson's (95% vs 90%, F2 0.987)      │
 │                   │                                  │ Vertebral Column (85% vs 70% / 65%)     │
+│                   │                                  │ Maternal Health Risk (88% vs 84% / 76%) │
 ├───────────────────┼──────────────────────────────────┼─────────────────────────────────────────┤
 │ 3. Q-CKTA Hybrid  │ Bandwidth Centered Alignment     │ Pima Indians Diabetes (70% vs 65%)      │
 │                   │ Data-Driven Gram Fusion          │ 100% Precision, 0.802 ROC-AUC           │
@@ -170,7 +172,7 @@ flowchart LR
 
 ---
 
-## 📊 3. Empirical Results Across All 6 Clinical Datasets
+## 📊 3. Empirical Results Across All 7 Clinical Datasets
 
 All evaluations were executed under standardized 75/25 stratified training/testing splits with fixed seeds (`seed=42`).
 
@@ -262,13 +264,31 @@ All evaluations were executed under standardized 75/25 stratified training/testi
 
 ---
 
-## 🏆 4. Aggregate Cross-Domain Summary
+### Dataset 7: Maternal Health Risk (Obstetrics / Gynecology — $N=100$, 6 features, $n=3$ qubits)
+
+| Approach / Paradigm | Accuracy | $F_2$-Score | Precision | Sensitivity (Recall) | ROC-AUC | Wall-Clock Latency |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Approach 2: Sandwich HQNN** 🏆 | **0.880** | **0.735** | **0.833** | **0.714** | 0.770 | **0.22 s** |
+| **Approach 1: QuHaMA** | 0.840 | 0.606 | 0.800 | 0.571 | 0.730 | 19.21 s |
+| **Approach 3: Q-CKTA Hybrid** | 0.720 | 0.167 | 0.500 | 0.143 | **0.881** | 0.33 s |
+| *Classical Linear SVM (Baseline)* | *0.840* | *0.606* | *0.800* | *0.571* | *0.778* | *0.002 s* |
+| *Classical RBF SVM (Baseline)* | *0.760* | *0.323* | *0.667* | *0.286* | *0.937* | *0.001 s* |
+| *Pure QSVC (ZZFeatureMap, s=0.1)* | *0.760* | *0.323* | *0.667* | *0.286* | *0.706* | *0.20 s* |
+
+> **Key Finding:** Approach 2 (Sandwich HQNN) significantly outperforms **both** classical baselines (+4.0% over Linear SVM, +12.0% over RBF SVM), with a dramatic leap in $F_2$-Score (0.735 vs 0.606 / 0.323) and clinical sensitivity (0.714 vs 0.571 / 0.286). Approach 1 (QuHaMA) outperforms Classical RBF SVM (+8.0% accuracy, +0.283 $F_2$-score) and matches Linear SVM. Approach 3 achieves the highest ROC-AUC among hybrid architectures (0.881).
+
+---
+
+## 🏆 4. Aggregate Cross-Domain Summary (All 7 Clinical Datasets)
 
 | Approach | Mean Accuracy | Mean $F_2$-Score | Mean Precision | Mean Recall | Mean ROC-AUC | Mean Latency | Primary Clinical Advantage |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Approach 2: Sandwich HQNN** 🥇 | **87.8%** | **0.830** | **85.2%** | **83.1%** | **0.903** | **0.17 s** | Undisputed overall winner; highest accuracy and AUC across all domains |
-| **Approach 3: Q-CKTA Hybrid** 🥈 | 82.2% | 0.757 | **87.7%** | 76.5% | 0.781 | **0.23 s** | Optimal analytical kernel bandwidth; beats classical on Pima Diabetes |
-| **Approach 1: QuHaMA** 🥉 | 82.0% | **0.773** | 79.1% | **77.9%** | **0.867** | 8.84 s | Patient-specific dynamic gating; perfect precision on Breast Cancer |
+| **Approach 2: Sandwich HQNN** 🥇 | **87.9%** | **0.816** | **84.9%** | **81.4%** | **0.884** | **0.18 s** | **Undisputed overall winner**: Surpasses classical baselines across 5 of 7 datasets; lowest latency; highest cross-domain accuracy (+5.2% over classical). |
+| **Approach 1: QuHaMA** 🥈 | 82.3% | **0.749** | 79.2% | **75.0%** | **0.847** | 10.32 s | **Patient-specific dynamic gating**: Achieves 100% precision on Breast Cancer, beats classical models on Vertebral Column and Maternal Health Risk. |
+| **Approach 3: Q-CKTA Hybrid** 🥉 | 80.7% | 0.673 | **82.3%** | 67.6% | 0.795 | **0.24 s** | **Data-driven kernel bandwidth**: Breaks the quantum concentration curse; beats both classical models on Pima Diabetes (70.0% vs 65.0%). |
+| *Classical Linear SVM (Baseline)* | *82.7%* | *0.768* | *77.1%* | *78.3%* | *0.876* | *0.001 s* | Linear hyperplane benchmark across standard continuous clinical biomarkers. |
+| *Classical RBF SVM (Baseline)* | *82.3%* | *0.730* | *75.7%* | *74.2%* | *0.858* | *0.001 s* | Standard non-linear Euclidean radial basis function baseline. |
+| *Pure QSVC (s=0.1)* | *75.1%* | *0.663* | *69.5%* | *68.1%* | *0.705* | *0.118 s* | Standalone quantum kernel susceptible to Hilbert space concentration without neural hybridization. |
 
 ---
 

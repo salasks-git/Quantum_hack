@@ -155,12 +155,17 @@ def render(cfg: PipelineConfig, data: PreparedData, results: dict) -> None:
                 return {}
             y_p = res["pred"]
             prob = res.get("prob")
+            if prob is not None:
+                prob_1d = prob[:, 1] if (hasattr(prob, "ndim") and prob.ndim == 2) else prob
+                auc = roc_auc_score(data.y_test, prob_1d) if len(np.unique(data.y_test)) > 1 else 0.5
+            else:
+                auc = 0.5
             return {
                 "Accuracy": accuracy_score(data.y_test, y_p),
                 "F2": fbeta_score(data.y_test, y_p, beta=2, zero_division=0),
                 "Precision": precision_score(data.y_test, y_p, zero_division=0),
                 "Recall": recall_score(data.y_test, y_p, zero_division=0),
-                "ROC-AUC": roc_auc_score(data.y_test, prob[:, 1]) if prob is not None and len(np.unique(data.y_test)) > 1 else 0.5,
+                "ROC-AUC": auc,
                 "Latency": res.get("total_time", 0.001),
             }
 
