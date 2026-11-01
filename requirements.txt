@@ -1,5 +1,5 @@
-qiskit>=1.0.0
-qiskit[visualization]>=1.0.0
+qiskit>=1.0.0,<2.5  # 2.5.x+ segfaults on Streamlit reruns (new thread per rerun)
+qiskit[visualization]>=1.0.0,<2.5
 qiskit-aer>=0.14.0
 qiskit-algorithms>=0.3.0
 qiskit-machine-learning>=0.7.2
