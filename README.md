@@ -12,7 +12,7 @@
 
 ## 📌 Executive Summary
 
-**Q-Med** is a reproducible, multi-domain hybrid quantum-classical diagnostic platform built on **Qiskit 1.x** and **Streamlit**. It delivers an empirical, head-to-head benchmark comparing state-of-the-art Quantum Machine Learning algorithms against standard classical models across five clinical disease domains:
+**Q-Med** is a reproducible, multi-domain hybrid quantum-classical diagnostic platform built on **Qiskit 1.x** and **Streamlit**. It delivers an empirical, head-to-head benchmark comparing state-of-the-art Quantum Machine Learning algorithms against standard classical models across six clinical disease domains:
 
 - **Oncology:** Wisconsin Breast Cancer Diagnosis (Malignant vs. Benign)
 - **Neurology:** Parkinson's Disease Vocal Biomarker Detection
@@ -196,8 +196,8 @@ cd web && npm install && npm run dev
 For the venue, use a production build instead: `cd web && npm run build && npm run preview`.
 
 ### What you are looking at
-- **Disease picker:** one of the 5 clinical datasets (breast cancer, diabetes, heart disease, Parkinson's, vertebral column).
-- **Patient picker:** one of the 25 held-out test patients for that disease. The models never saw these patients during training, and each one is labelled with the true diagnosis. All four models (Linear SVM, RBF SVM, QSVC, VQC) train on the same 75 patients per disease.
+- **Disease picker:** one of the 6 clinical datasets (breast cancer, diabetes, heart disease, Parkinson's, vertebral column, acute inflammations).
+- **Patient picker:** one of the held-out test patients for that disease. The models never saw these patients during training, and each one is labelled with the true diagnosis. All four models (Linear SVM, RBF SVM, QSVC, VQC) train on the same held-out split per disease.
 
 ### The 5 scenes
 1. **Patient becomes qubits:** the patient's measurements are standardized, reduced to 3 numbers (PCA) and turned into 3 qubit angles.
