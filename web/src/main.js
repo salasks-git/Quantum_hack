@@ -6,6 +6,7 @@ import { SceneManager } from "./sceneManager.js";
 import { mountDatasetExplorer } from "./datasetExplorer.js";
 import { renderLegend, mountLegendToggle } from "./legend.js";
 import { mountAllPatients } from "./allPatients.js";
+import { mountSettingsDrawer } from "./settingsDrawer.js";
 import scene1 from "./scenes/scene1.js";
 import scene2 from "./scenes/scene2.js";
 import scene3 from "./scenes/scene3.js";
@@ -93,10 +94,35 @@ async function selectDisease(slug) {
     rebuild();
     allPatients.refresh(); // all-patients overlay follows the disease
     datasetExplorer.refresh();
+    settingsDrawer.clearCustom(); // static data for this disease: drop any Custom run state
   } catch (e) {
     showError(e.message);
   }
 }
+
+// --- Settings drawer + live retraining (Task 22a) ---
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { t.hidden = true; }, 6000);
+}
+// Data-swap hook: replace the active dataset object (Custom run) and re-render the current step.
+function swapData(data) {
+  state.data = data;
+  fillPatients();
+  rebuild();
+  allPatients.refresh();
+  datasetExplorer.refresh();
+}
+const settingsDrawer = mountSettingsDrawer({
+  button: $("settings-btn"), container: $("settings-drawer"), badge: $("custom-badge"),
+  getData: () => state.data, getSlug: () => state.slug,
+  getLabel: () => (state.index.find((d) => d.slug === state.slug) || {}).label,
+  onApply: swapData, onReset: () => selectDisease(state.slug), onToast: toast,
+});
+if (params.get("settings") === "1") settingsDrawer.setOpen(true);
+// --- end Settings drawer ---
 
 // --- All patients overlay (Task 17) ---
 const allPatients = mountAllPatients($("all-btn"), $("allpatients"), {
