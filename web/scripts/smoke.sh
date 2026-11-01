@@ -4,6 +4,10 @@ set -u
 cd "$(dirname "$0")/.."
 CHROME="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
 PORT=4317
+# --- step range derives from the step table in src/main.js (override with STEPS=n) ---
+STEPS="${STEPS:-$(node -e 'const m=require("fs").readFileSync("src/main.js","utf8").match(/const STEP_FACTORIES = \[([^\]]*)\]/);console.log(m?m[1].split(",").filter((x)=>x.trim()).length:0)')}"
+[ "$STEPS" -ge 1 ] 2>/dev/null || { echo "could not derive step count from src/main.js"; exit 1; }
+# --- end step range ---
 mkdir -p out
 npm run build >/dev/null 2>&1 || { echo "build failed"; exit 1; }
 npx vite preview --port $PORT --strictPort >out/preview.log 2>&1 &

@@ -28,3 +28,15 @@ export function loadBandwidth(slug) {
   }
   return bandwidthCache.get(slug);
 }
+
+// --- QuHaMA scene data (lazy, cached per disease; a failed load is not cached) ---
+const quhamaCache = new Map();
+export function loadQuhama(slug) {
+  if (!quhamaCache.has(slug)) {
+    const p = getJson(`data/${slug}.quhama.json`, `Could not load QuHaMA data for '${slug}'`);
+    p.catch(() => quhamaCache.delete(slug));
+    quhamaCache.set(slug, p);
+  }
+  return quhamaCache.get(slug);
+}
+// --- end QuHaMA scene data ---
