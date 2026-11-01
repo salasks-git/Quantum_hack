@@ -331,47 +331,82 @@ Open your browser at `http://localhost:8501`.
 
 ## 🎬 3D Diagnosis Tour
 
-A browser-based, Three.js walkthrough that shows how one patient gets diagnosed, step by step, by the classical and quantum models. It lives in `web/` and runs separately from the Streamlit app. It needs no internet at runtime (Three.js is bundled).
+A browser-based, Three.js walkthrough that shows how one patient gets diagnosed, step by step, by the classical and quantum models. It lives in `web/` and runs separately from the Streamlit app. The static tour needs no internet at runtime (Three.js is bundled). The optional live mode and the IBM run need a small local helper (see below).
 
 ### Run it
 ```bash
-# 1. Export the tour data (once, or whenever the models change). Writes JSON into web/public/data/
+# 1. (Optional) Re-export the tour data, once or whenever the models change. Writes JSON into web/public/data/
 venv/bin/python scripts/export_tour_data.py
+venv/bin/python scripts/export_dataset_tables.py   # 📋 Dataset overlay tables
+venv/bin/python scripts/export_tour_extras.py      # scenes 7 and 8 (bandwidth sweep, QuHaMA)
 
 # 2. Start the dev server
 cd web && npm install && npm run dev
 ```
-For the venue, use a production build instead: `cd web && npm run build && npm run preview`.
+For offline demos at the venue, use a production build instead: `cd web && npm run build && npm run preview`.
 
-### What you are looking at
-- **Disease picker:** one of the 6 clinical datasets (breast cancer, diabetes, heart disease, Parkinson's, vertebral column, acute inflammations).
-- **Patient picker:** one of the held-out test patients for that disease. The models never saw these patients during training, and each one is labelled with the true diagnosis. All four models (Linear SVM, RBF SVM, QSVC, VQC) train on the same held-out split per disease.
+For the live features (retraining, custom patient, IBM), start the helper in a second terminal from the repo root:
+```bash
+python scripts/qpu_server.py            # 127.0.0.1:8765; flags: --port, --max-jobs (default 3), --account
+```
+Vite proxies `/api` to the helper. Without it the tour still works on the static data.
 
-### The 5 scenes
-1. **Patient becomes qubits:** the patient's measurements are standardized, reduced to 3 numbers (PCA) and turned into 3 qubit angles.
+### Diseases
+All 7 datasets in `qmed/config.py`: Parkinson's, heart disease, breast cancer, diabetes, vertebral column, acute inflammations and maternal health. Pick the disease and one of the held-out test patients in the top bar. The models never saw these patients during training, and each is labelled with the true diagnosis.
+
+### The 8 scenes
+1. **Patient becomes qubits:** measurements are standardized, reduced by PCA and turned into qubit angles.
 2. **Classical doctors:** the Linear SVM and RBF SVM each draw a boundary through the training patients and say which side this patient is on.
-3. **QSVC quantum similarity:** the patient is encoded into quantum states and compared with the training patients (the quantum kernel). Bloch spheres show the first encoding layer only.
+3. **QSVC quantum similarity:** the patient is encoded into quantum states and compared with the training patients (the quantum kernel).
 4. **VQC learning:** the trainable circuit adjusts its rotation angles, the loss falls, then it gives its verdict.
-5. **Finale, four verdicts:** all four models give their diagnosis side by side, with confidence, next to the true label.
+5. **Verdict + Hybrid + clinical scoreboard:** every model's diagnosis side by side with confidence and the true label, plus the Hybrid Ensemble and a clinical scoreboard (F2, recall, missed cases).
+6. **Simulator to real IBM QPU:** gates, a time race, training and inference timings for all models, an efficiency frontier (time vs F2), and an optional live run on IBM hardware.
+7. **Kernel Bandwidth Lab:** how the kernel scale s changes the kernel landscape and the cross-validated QSVC scores, against the RBF baseline.
+8. **QuHaMA:** the hybrid adaptive architecture (encoder, classical head, quantum branch, gating network) on the selected patient.
 
-### Controls
-- **Prev / Next:** move between scenes. **Replay:** restart the current scene.
-- **Play all:** run scenes 1 to 5 automatically.
-- **Pause / Resume:** button, or press **Space**.
-- **3s holds:** when on, playback stops for 3 seconds at key moments so you can talk over them.
+### Overlays and controls
+| Control | What it does |
+|---------|--------------|
+| ⓘ **Legend** (**L**) | explains the terms and colours of the current scene |
+| 👥 **All patients** (**A**) | per-patient predictions for every model, plus metrics and confusion matrices |
+| 📋 **Dataset** (**D**) | the dataset table and summary statistics |
+| ⚙️ **Settings** | live retraining with your own settings (needs the helper) |
+| 🧪 **Custom patient** (**C**) | one slider per qubit; live predictions for a made-up patient (needs the helper) |
+| ⏸ **Pause** (**Space**), **Prev / Next**, **Replay**, **Play all** | playback; Play all runs scenes 1 to 8 |
+
+The old "3s holds" toggle has been removed.
+
+### Static vs live mode
+- **Static (default):** the data is precomputed by `scripts/export_tour_data.py` (plus `export_dataset_tables.py` and `export_tour_extras.py`) with settings that match the Streamlit defaults: 3 qubits, `ZZFeatureMap`, reps 2, `linear` entanglement, 100 patients, VQC 35 iterations, seed 42 and kernel bandwidth s = 0.1 (`DEFAULT_BANDWIDTH`).
+- **Live (needs `python scripts/qpu_server.py`):**
+  - **Retrain with settings:** same options as the Streamlit sidebar (60 to 180 patients in steps of 20, 2 to 4 qubits, feature map, depth, entanglement, bandwidth, VQC iterations). A run takes a few seconds, then the whole tour replays on it with a "Custom run" badge. "Reset to precomputed" goes back to the static data.
+  - **Custom patient:** the sliders call the helper and show every model's prediction for that patient.
+  - **IBM backends and live QPU run** (scene 6), see below.
+
+### IBM setup (free tier)
+The live QPU run and the backend list need a saved Qiskit account on channel `ibm_quantum_platform` (or the `QISKIT_IBM_TOKEN` environment variable) and an IBM Cloud quantum instance (the free Open Plan works). The token stays inside the helper and is never sent to the browser or logged.
+
+Free-tier safeguards:
+- You confirm before every run, and nothing submits automatically.
+- One job in flight at a time, and at most 3 jobs per helper run (`--max-jobs`).
+- 60 s execution cap, 1024 shots.
+- Results are cached in `web/.qpu-cache.json` (gitignored), so repeating a patient costs nothing.
+- The health check never contacts IBM. The backend list (📡 button in scene 6) contacts IBM only when clicked, submits nothing and uses no QPU time.
 
 ### Deep links (URL parameters)
 | Param | Meaning |
 |-------|---------|
 | `disease` | dataset slug, e.g. `heart_disease_statlog` |
 | `patient` | test patient number, starting at 0 |
-| `step` | scene number, 1 to 5 |
-| `holds=1` | turn the 3s holds on |
+| `step` | scene number, 1 to 8 |
+| `all=1` | open the 👥 All patients overlay |
+| `dataset=1` | open the 📋 Dataset overlay |
+| `settings=1` | open the ⚙️ Settings drawer |
 
-Rehearsal link: `http://localhost:5180/?disease=heart_disease_statlog&patient=3&step=1&holds=1` (use the port Vite prints; 5173 by default).
+Rehearsal link: `http://localhost:5173/?disease=heart_disease_statlog&patient=3&step=1` (use the port Vite prints).
 
 ### Matching the Streamlit app
-The tour numbers are precomputed with a fixed seed (42), 3 qubits and 100 patients per disease. In Streamlit, set 3 qubits, 100 patients, `ZZFeatureMap`, reps 2, `linear` entanglement and 35 iterations to see the same quantum results.
+The static tour matches the Streamlit defaults: 3 qubits, 100 patients, `ZZFeatureMap`, reps 2, `linear` entanglement, 35 VQC iterations, seed 42 and kernel bandwidth s = 0.1. Set those in the sidebar to see the same quantum results.
 
 ---
 
@@ -420,21 +455,26 @@ Quantum_hack/
 │   ├── maternal_health_risk.csv
 │   ├── parkinsons_vocal.csv
 │   └── vertebral_column.csv
-├── tests/                     # Comprehensive pytest test suite (25 unit tests)
+├── tests/                     # pytest tests
 │   ├── test_models.py
-│   ├── test_export.py
-│   ├── test_export_dataset.py
+│   ├── test_export.py         # Tour data export
+│   ├── test_export_dataset.py # Dataset overlay export
+│   ├── test_live_api.py       # Live retrain / custom-patient API
+│   ├── test_qpu_server.py     # IBM helper and free-tier safeguards (fakes, no IBM)
 │   ├── test_hardware.py
-│   ├── test_qpu_server.py
 │   └── test_quhama.py
 ├── docs/                      # Design specs and implementation plans
-├── web/                       # Three.js 3D diagnosis tour (Vite)
-│   ├── src/                   # Scenes, scene manager, data loader
-│   ├── public/data/           # Tour JSON written by export_tour_data.py
+├── web/                       # Three.js 3D diagnosis tour (Vite; npm run dev / build / preview / test)
+│   ├── src/                   # 8 scenes, overlays (legend, all patients, dataset, settings, custom patient), live client, tests
+│   ├── public/data/           # Tour JSON written by the export scripts
 │   └── scripts/smoke.sh       # Headless screenshot smoke test
-└── scripts/                   # Automated data pipelines
+└── scripts/                   # Data pipelines and local helper
     ├── download_datasets.py   # Dataset ingestion and preprocessing script
-    └── export_tour_data.py    # Exports per-disease JSON for the 3D tour
+    ├── export_tour_data.py    # Per-disease JSON for the 3D tour
+    ├── export_dataset_tables.py # Dataset overlay tables
+    ├── export_tour_extras.py  # Kernel Bandwidth Lab and QuHaMA data (scenes 7 and 8)
+    ├── live_api.py            # Live retraining and custom-patient predictions (pure logic)
+    └── qpu_server.py          # Local helper: live API + IBM backends + one-job QPU run
 ```
 
 ---
@@ -501,8 +541,14 @@ print(sweep.table, sweep.rbf)
 
 ### Known limitations
 
-- **Quantum models are repeatable.** QSVC uses the exact statevector kernel, so it is deterministic. VQC uses `seed=42` (sampler shots and start weights), so retraining gives identical scores. Classical baselines are deterministic (`random_state=42`). The Streamlit settings that match the 3D tour are 3 qubits, 100 patients, ZZFeatureMap, reps 2, linear entanglement, 35 VQC iterations, kernel bandwidth s = 1.0 (the tour export uses the unscaled kernel; the app defaults to s = 0.1).
+- **Quantum models are repeatable.** QSVC uses the exact statevector kernel, so it is deterministic. VQC uses `seed=42` (sampler shots and start weights), so retraining gives identical scores. Classical baselines are deterministic (`random_state=42`). The Streamlit settings that match the 3D tour are 3 qubits, 100 patients, ZZFeatureMap, reps 2, linear entanglement, 35 VQC iterations, kernel bandwidth s = 0.1 (the app default, also used by the static tour).
 - **Simulated, not real hardware.** All circuits run on a local statevector simulator; cost grows as $2^n$, which is why qubits are capped at 4.
+- **Tour: QuHaMA is unreliable on some datasets.** For example vertebral column has a test ROC-AUC of about 0.51, close to a coin flip. Scene 8 shows a warning when AUC is below 0.6.
+- **Tour: 2- and 4-qubit scenes are projections.** Live runs with 2 qubits draw a 2D plane; with 4 qubits scenes show a 3D slice (the 4th dimension is not drawn).
+- **Tour: custom-patient bars are reconstructed.** Scene 1 bars for a custom patient are rebuilt from the angles and are approximate. Live QPU runs work only for real test patients.
+- **Tour: live runs are kept in memory only.** Restarting the helper forgets them (they retrain in a few seconds). Only the IBM result cache is saved to disk.
+- **IBM runtime deprecation.** `SamplerV2` is deprecated in qiskit-ibm-runtime 0.50+, which the helper uses for the QPU run.
+- **Streamlit IBM tab uses a retired channel.** `qmed/ui/tab_ibm_hardware.py` still uses the old `ibm_quantum` channel, which IBM has retired. The 3D tour helper uses `ibm_quantum_platform`. The Streamlit tab has not been changed; teammates should update it.
 
 ---
 
