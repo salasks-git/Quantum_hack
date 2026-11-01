@@ -75,3 +75,21 @@ export const LEGEND_6 = [
   { symbol: "F2 score", text: "0–1 score that counts a missed sick patient twice as heavily as a false alarm. Higher is better." },
   { symbol: "efficiency frontier", text: "Pareto-optimal models (gold line): no other model is both faster and has a higher F2." },
 ];
+
+export const LEGEND_BANDWIDTH = [
+  { symbol: "s (bandwidth)", text: "A dial that shrinks each patient's angles before they are loaded into the qubits: K = |⟨ψ(s·x)|ψ(s·x′)⟩|². It plays the same role as γ in a classical RBF kernel and costs nothing on hardware." },
+  { symbol: "K", text: "Quantum similarity (kernel) between two training patients: 1 = identical states, 0 = completely different." },
+  { symbol: "kernel landscape", text: "The kernel matrix in 3D: one column per pair of training patients, height and brightness = K. Patients are sorted healthy first, then disease." },
+  { symbol: "healthy block", swatch: "#4ade80", text: "Pairs of two healthy patients. A useful kernel makes this block (and the disease block) higher than the mixed pairs." },
+  { symbol: "disease block", swatch: "#fb7185", text: "Pairs of two sick patients." },
+  { symbol: "too sharp", text: "s too large: every patient looks unique (K ≈ 0 off the diagonal, a near-identity matrix), so the SVM memorises the training set (overfits)." },
+  { symbol: "too flat / too blurred", text: "s too small: everyone looks alike (K ≈ 1 for every pair, an all-ones matrix), so the kernel can't separate sick from healthy." },
+  { symbol: "balanced", text: "In between: similar patients score high, different patients score low." },
+  { symbol: "kernel-target alignment", text: "How closely the kernel's similarity pattern matches the true diagnoses (centered). Higher = better." },
+  { symbol: "cross-validation (5-fold)", text: "All patients of the cohort split into 5 parts; train on 4, test on the 5th, rotate, and average. Scaling and PCA are refit inside each fold." },
+  { symbol: "CV accuracy bars", swatch: "#a78bfa", text: "QSVC cross-validated accuracy at each s (whisker = ± 1 std over folds)." },
+  { symbol: "ROC-AUC dots", swatch: "#f0abfc", text: "QSVC cross-validated ROC-AUC at each s (from the SVM margin)." },
+  { symbol: "RBF reference", swatch: "#38bdf8", text: "The classical RBF SVM's cross-validated accuracy (plane) and ROC-AUC (dashed line) on the same folds." },
+  { symbol: "best s", swatch: "#fbbf24", text: "The s with the highest CV accuracy. Picking it from the same table is itself tuning, so it is slightly optimistic." },
+  { symbol: "default s", text: "The app's default bandwidth (the value is shown on screen from the exported data)." },
+];
