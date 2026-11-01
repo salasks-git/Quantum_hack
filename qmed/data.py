@@ -23,6 +23,9 @@ class PreparedData:
     y_test: np.ndarray
     pca: PCA
     prep_time: float       # seconds spent in this whole step
+    X_test_raw: np.ndarray = None  # held-out patients, original units
+    X_test_std: np.ndarray = None  # after StandardScaler
+    X_test_pca: np.ndarray = None  # after PCA (before angle scaling)
 
 
 def load_dataset(csv_path: Path):
@@ -62,12 +65,16 @@ def prepare_data(csv_path: Path, max_samples: int, n_qubits: int) -> PreparedDat
     pca = PCA(n_components=n_qubits, random_state=RANDOM_STATE)
     angle_scaler = MinMaxScaler(feature_range=(0, np.pi))
 
-    X_train_q = angle_scaler.fit_transform(pca.fit_transform(std_scaler.fit_transform(X_train)))
-    X_test_q = angle_scaler.transform(pca.transform(std_scaler.transform(X_test)))
+    X_train_std = std_scaler.fit_transform(X_train)
+    X_train_q = angle_scaler.fit_transform(pca.fit_transform(X_train_std))
+    X_test_std = std_scaler.transform(X_test)
+    X_test_pca = pca.transform(X_test_std)
+    X_test_q = angle_scaler.transform(X_test_pca)
 
     return PreparedData(
         df=df, feature_names=feature_names,
         X_train_q=X_train_q, X_test_q=X_test_q,
         y_train=y_train, y_test=y_test,
         pca=pca, prep_time=time.time() - t_start,
+        X_test_raw=X_test, X_test_std=X_test_std, X_test_pca=X_test_pca,
     )

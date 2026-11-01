@@ -1,0 +1,27 @@
+[
+  {
+    "slug": "parkinsons_vocal",
+    "label": "Parkinson's Vocal Biomarkers (Neurology)",
+    "n_features": 22
+  },
+  {
+    "slug": "heart_disease_statlog",
+    "label": "Statlog Heart Disease (Cardiology)",
+    "n_features": 13
+  },
+  {
+    "slug": "breast_cancer_wisconsin",
+    "label": "Wisconsin Breast Cancer (Oncology)",
+    "n_features": 30
+  },
+  {
+    "slug": "diabetes_pima",
+    "label": "Pima Indians Diabetes (Endocrinology)",
+    "n_features": 8
+  },
+  {
+    "slug": "vertebral_column",
+    "label": "Vertebral Column (Orthopedics)",
+    "n_features": 6
+  }
+]
