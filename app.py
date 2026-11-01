@@ -117,6 +117,9 @@ else:
 ansatz = RealAmplitudes(num_qubits=n_qubits, reps=reps, entanglement=entanglement)
 
 # --- 3. HYBRID MODEL TRAINING & EVALUATION ---
+# Cache note: Streamlit skips hashing args prefixed with "_" (circuit objects can't be hashed).
+# fm_name, reps, ent stand in for _feature_map/_ansatz in the cache key — any new circuit
+# setting MUST also be passed as a plain argument here, or stale cached models will be reused.
 @st.cache_resource
 def train_pipeline(dataset_label, X_train_q, X_test_q, y_train, y_test, _feature_map, _ansatz, fm_name, reps, ent, vqc_iter):
     results = {}
@@ -200,10 +203,12 @@ def train_pipeline(dataset_label, X_train_q, X_test_q, y_train, y_test, _feature
 
     t_inf_0 = time.time()
     y_pred_vqc = np.asarray(vqc.predict(X_test_q)).ravel().astype(int)
+    # Use real class probabilities (not hard 0/1 labels) so ROC-AUC measures ranking fairly
+    y_prob_vqc = np.asarray(vqc.predict_proba(X_test_q))[:, 1]
     inf_time_vqc = time.time() - t_inf_0
 
     results["Variational Quantum (VQC)"] = {
-        "model": vqc, "pred": y_pred_vqc, "prob": y_pred_vqc,
+        "model": vqc, "pred": y_pred_vqc, "prob": y_prob_vqc,
         "train_time": train_time_vqc, "inf_time": inf_time_vqc,
         "total_time": train_time_vqc + inf_time_vqc,
         "time": train_time_vqc + inf_time_vqc,
@@ -422,11 +427,33 @@ with tab4:
 with tab5:
     st.subheader("🩺 Real-Time Quantum Patient Diagnostic Inference")
     st.markdown("Adjust the qubit rotation angles $\\vec{x} \\in [0, \\pi]$ to compare live inference between **QSVC** and **Classical RBF SVM**:")
+    st.caption(
+        f"Each slider is a compressed PCA summary score (a blend of all {len(feature_names)} clinical "
+        "measurements) mapped to a rotation angle — not a raw value like blood pressure or glucose. "
+        "Load a real held-out test patient below to start from genuine data."
+    )
+
+    patient_options = ["Custom (manual sliders)"] + [
+        f"Test patient #{i} — actual: {'Disease' if y_test[i] == 1 else 'Healthy'}"
+        for i in range(len(y_test))
+    ]
+    patient_choice = st.selectbox("Load patient", range(len(patient_options)), format_func=lambda k: patient_options[k])
+
+    if patient_choice == 0:
+        default_angles = np.full(n_qubits, np.pi / 2)
+    else:
+        # Test angles come from a scaler fit on training data, so they can fall slightly outside [0, pi]
+        default_angles = np.clip(X_test_q[patient_choice - 1], 0.0, np.pi)
+
     sliders = []
     scols = st.columns(n_qubits)
     for i in range(n_qubits):
         with scols[i]:
-            val = st.slider(f"Qubit {i} Angle (PC{i+1})", 0.0, float(np.pi), float(np.pi / 2), 0.05)
+            # Key includes patient choice so sliders reset when a different patient is loaded
+            val = st.slider(
+                f"Qubit {i} Angle (PC{i+1})", 0.0, float(np.pi), float(default_angles[i]), 0.05,
+                key=f"angle_{i}_{patient_choice}_{n_qubits}",
+            )
             sliders.append(val)
 
     patient_vec = np.array([sliders])
