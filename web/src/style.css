@@ -190,3 +190,14 @@ button:hover,select:hover{border-color:var(--accent)}
 .mn-status{border-top:1px solid #1e293b;padding:6px 8px 2px;font-size:11.5px;color:var(--muted)}
 .mn-status[hidden]{display:none}
 /* --- end menu --- */
+/* dataset overlay: model performance */
+.ds-perf{margin-bottom:12px}.ds-perf h3{margin:0 0 6px;font-size:14px}
+.ds-bars{display:grid;gap:3px;margin:6px 0 10px}
+.ds-bar{display:grid;grid-template-columns:150px 1fr 48px;gap:8px;align-items:center;font-size:12px}
+.ds-bt{background:#0e1426;border-radius:4px;height:12px;overflow:hidden}.ds-bf{display:block;height:100%}
+.ds-bv{text-align:right;font-variant-numeric:tabular-nums}.ds-bar.lead .ds-bn,.ds-bar.lead .ds-bv{font-weight:700;color:#fde68a}
+.ds-bar.lead .ds-bt{outline:1px solid #fbbf24}
+.ds-bf.classical,.ds-fam.classical{background:#22d3ee;color:#042f2e}.ds-bf.quantum,.ds-fam.quantum{background:#8b5cf6;color:#fff}
+.ds-bf.hybrid,.ds-fam.hybrid{background:#14b8a6;color:#042f2e}.ds-bf.elite,.ds-fam.elite{background:#fbbf24;color:#422006}
+.ds-fam{padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.ds-table tr.lead td{background:#1c1a0a}
