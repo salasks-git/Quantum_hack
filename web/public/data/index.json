@@ -23,5 +23,10 @@
     "slug": "vertebral_column",
     "label": "Vertebral Column (Orthopedics)",
     "n_features": 6
+  },
+  {
+    "slug": "acute_inflammations",
+    "label": "Acute Inflammations (Nephrology / Urology)",
+    "n_features": 6
   }
 ]

@@ -14,7 +14,7 @@ Modern clinical diagnosis relies heavily on high-dimensional biomedical measurem
 **Q-Med** introduces an end-to-end, reproducible **Hybrid Quantum-Classical Diagnostic Platform** built on **Qiskit 1.x** and **Streamlit**. It investigates whether **Near-Term Intermediate-Scale Quantum (NISQ)** algorithms can offer representational advantages or diagnostic complementary value over classical statistical baselines when classifying multi-organ diseases.
 
 ### Key Innovations of the Proposed System:
-1. **Multi-Domain Clinical Benchmark:** Evaluates 5 distinct medical disciplines (Oncology, Neurology, Cardiology, Endocrinology, and Orthopedics) using standardized offline datasets.
+1. **Multi-Domain Clinical Benchmark:** Evaluates 6 distinct medical disciplines (Oncology, Neurology, Cardiology, Endocrinology, Orthopedics, and Nephrology) using standardized offline datasets.
 2. **Phase-Ambiguity-Free Quantum Preprocessing:** A rigorous 3-stage data preparation pipeline (Standardization $\to$ PCA $\to$ $[0, \pi]$ Angle Scaling) tailored for the Bloch sphere.
 3. **Rigorous Apples-to-Apples Comparison:** All 4 models (Linear SVM, RBF SVM, QSVC, and VQC) are trained and tested on the exact same compressed representation, eliminating dimensionality bias.
 4. **Fidelity-Based Quantum Kernel Geometry:** QSVC computes inner products directly in a $2^n$-dimensional complex projective Hilbert space using Qiskit's `ComputeUncompute` state fidelity primitive.
