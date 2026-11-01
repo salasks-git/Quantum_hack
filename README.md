@@ -87,7 +87,11 @@ Launch the diagnostic dashboard (`streamlit run app.py`) to explore five special
    - Granular wall-clock profiling tracking preprocessing, training, and test inference times.
    - Side-by-side comparative horizontal bar charts and stacked train vs. inference visualizations.
    - Per-patient latency (ms) and throughput (patients/sec) analysis with theoretical scaling complexity ($O(\cdot)$).
-5. **🩺 Tab 5 — Live Patient Diagnostic Simulator:**
+5. **🔬 Tab 5 — IBM Quantum Hardware Latency (Real QPU):**
+   - Transpiles circuits to IBM native basis gates (`rz`, `sx`, `x`, `ecr`) and computes pure physical QPU gate execution times.
+   - Compares physical QPU microwave pulse speeds ($\sim 35\text{ ns}$ single-qubit, $300\text{ ns}$ two-qubit) vs. local CPU simulation vs. IBM cloud queue delay.
+   - Optional live IBM Quantum API connection to query real QPU statuses and pending queue depths.
+6. **🩺 Tab 6 — Live Patient Diagnostic Simulator:**
    - Real-time inference sliders, one per qubit. Each slider is a compressed PCA summary score mapped to a rotation angle — **not** a raw clinical value such as blood pressure or glucose.
    - **Load patient** dropdown fills the sliders from a real held-out test patient and shows their true diagnosis.
    - Live side-by-side disease prediction and confidence metrics between **QSVC** and **Classical RBF SVM**.

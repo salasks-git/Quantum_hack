@@ -9,7 +9,7 @@ from qmed.circuits import build_ansatz, build_feature_map
 from qmed.config import DATASETS
 from qmed.data import PreparedData, prepare_data
 from qmed.models import train_all_models
-from qmed.ui import tab_benchmarks, tab_circuits, tab_dataset, tab_profiler, tab_simulator
+from qmed.ui import tab_benchmarks, tab_circuits, tab_dataset, tab_ibm_hardware, tab_profiler, tab_simulator
 from qmed.ui.sidebar import render_sidebar
 
 st.set_page_config(page_title="Q-Med: Hybrid Quantum Disease Classifier", layout="wide")
@@ -52,12 +52,13 @@ with st.spinner(f"Simulating {cfg.n_qubits}-Qubit Hilbert Space on {cfg.dataset_
         cfg.feature_map_name, cfg.n_qubits, cfg.reps, cfg.entanglement, cfg.vqc_iter,
     )
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 1. Dataset & Quantum Preprocessing",
     "⚛️ 2. Quantum Circuits & Kernel Matrix",
     "🏆 3. Classical vs Quantum Benchmarks",
     "⏱️ 4. Execution Time & Quantum Latency Profiler",
-    "🩺 5. Live Patient Diagnostic Simulator",
+    "🔬 5. IBM Quantum Hardware Latency (Real QPU)",
+    "🩺 6. Live Patient Diagnostic Simulator",
 ])
 with tab1:
     tab_dataset.render(cfg, data)
@@ -68,4 +69,6 @@ with tab3:
 with tab4:
     tab_profiler.render(cfg, data, results)
 with tab5:
+    tab_ibm_hardware.render(cfg, data, feature_map, ansatz, results)
+with tab6:
     tab_simulator.render(cfg, data, results)
