@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LEGEND_5 } from "./legends.js";
 import { PALETTE, ease, seg, textSprite, glowSprite, disposeTree, addLights } from "./common.js";
 import { MODEL_KEYS, MODEL_LABELS, verdictFor } from "../verdict.js";
 import { clinicalScores, clinicalLeader } from "../clinical.js";
@@ -203,6 +204,7 @@ export default function createScene(ctx) {
 
   return {
     title: "Finale: five verdicts + clinical scoreboard",
+    legend: LEGEND_5,
     scene,
     cameraPos: [0, 1.4, 8.6],
     duration,

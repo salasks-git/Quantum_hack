@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LEGEND_2 } from "./legends.js";
 import { PALETTE, ease, seg, textSprite, glowSprite, setOpacity, disposeTree, addLights } from "./common.js";
 import { verdictFor } from "../verdict.js";
 
@@ -350,6 +351,7 @@ export default function createScene(ctx) {
 
   return {
     title: "Classical doctors",
+    legend: LEGEND_2,
     scene,
     cameraPos: [0.6, 1.7, 7.0],
     duration,

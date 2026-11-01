@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import "./style.css";
 import { loadIndex, loadDisease } from "./data.js";
 import { SceneManager } from "./sceneManager.js";
+import { renderLegend, mountLegendToggle } from "./legend.js";
 import scene1 from "./scenes/scene1.js";
 import scene2 from "./scenes/scene2.js";
 import scene3 from "./scenes/scene3.js";
@@ -26,7 +27,6 @@ controls.enableZoom = false;
 controls.autoRotate = true;
 controls.autoRotateSpeed = 1.0; // time-based (r160): ~0.105 rad/s; SceneManager sways it within +-0.5 rad
 const manager = new SceneManager(renderer, camera, controls);
-manager.setHolds(params.get("holds") === "1");
 const pauseAt = parseFloat(params.get("pauseAt")); // rehearsal/debug: auto-pause at scene time N
 
 function resize() {
@@ -41,12 +41,27 @@ new ResizeObserver(resize).observe(stage); // top-bar wrap, error banner, window
 function showError(msg) { const e = $("error"); e.textContent = msg; e.hidden = false; }
 function clearError() { $("error").hidden = true; }
 
+const legendToggle = mountLegendToggle($("legend-btn"), $("legend"), { storageKey: "qmed.legend.open" });
+function updateLegend() {
+  const cur = manager.current;
+  const panel = $("legend");
+  panel.innerHTML = "";
+  const head = document.createElement("div");
+  head.className = "lg-head";
+  head.textContent = `Legend \u00B7 ${cur.title}`;
+  const body = document.createElement("div");
+  renderLegend(body, cur.legend || []);
+  panel.append(head, body);
+  panel.scrollTop = 0;
+}
+
 function rebuild() {
   if (!state.data) return;
   state.advanced = false;
   manager.show(STEP_FACTORIES[state.step - 1], { data: state.data, patient: state.patient });
+  updateLegend();
   document.querySelectorAll(".dot").forEach((d) => d.classList.toggle("active", +d.dataset.step === state.step));
-  history.replaceState(null, "", `?disease=${state.slug}&patient=${state.patient}&step=${state.step}${manager.holds ? "&holds=1" : ""}`);
+  history.replaceState(null, "", `?disease=${state.slug}&patient=${state.patient}&step=${state.step}`);
 }
 
 function fillPatients() {
@@ -101,19 +116,16 @@ function syncPause() {
 function togglePause() { manager.togglePause(); syncPause(); }
 $("pause").addEventListener("click", togglePause);
 addEventListener("keydown", (e) => {
+  if (e.code === "KeyL" && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (tag !== "SELECT" && tag !== "INPUT") { legendToggle.setOpen(!legendToggle.isOpen()); return; }
+  }
   if (e.code !== "Space" || e.repeat) return;
   const tag = document.activeElement && document.activeElement.tagName;
   if (tag === "SELECT") return;
   if (tag === "BUTTON" || tag === "INPUT") document.activeElement.blur();
   e.preventDefault();
   togglePause();
-});
-$("holds").checked = manager.holds;
-$("holds").addEventListener("change", (e) => {
-  manager.setHolds(e.target.checked);
-  const u = new URL(location.href);
-  if (e.target.checked) u.searchParams.set("holds", "1"); else u.searchParams.delete("holds");
-  history.replaceState(null, "", u);
 });
 
 function updateBadge() {
@@ -124,7 +136,9 @@ function updateBadge() {
   if (b.textContent !== txt) b.textContent = txt;
   b.hidden = !txt;
   const cap = $("caption");
-  b.style.setProperty("--cap-h", cap.innerHTML ? cap.offsetHeight + "px" : "0px");
+  const ch = cap.innerHTML ? cap.offsetHeight + "px" : "0px";
+  b.style.setProperty("--cap-h", ch);
+  stage.style.setProperty("--cap-h", ch);
 }
 
 function loop() {
