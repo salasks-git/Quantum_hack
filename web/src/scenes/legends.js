@@ -150,3 +150,39 @@ export const LEGEND_QUHAMA = [
   { symbol: "elite verdicts", text: "This patient's DISEASE/HEALTHY call and probability from each elite model, with ✓/✗ against the true diagnosis. A custom (slider) patient has no precomputed elite predictions." },
 ];
 // --- end QuHaMA scene legend ---
+// --- Sandwich scene legend (step 9) ---
+export const LEGEND_SANDWICH = [
+  { symbol: "Sandwich HQNN", text: "A hybrid neural network built like a sandwich: a classical network, then a small quantum circuit, then another classical network. Streamlit Tab 8's \"layer-embedded\" hybrid." },
+  { symbol: "inputs (σ)", swatch: "#38bdf8", text: "The patient's standardised measurements (σ units). Brighter = further from the average patient. For many features only the 12 most extreme are drawn; the network still reads all of them." },
+  { symbol: "classical encoder (Pre-Net)", swatch: "#38bdf8", text: "A small neural network that squeezes all measurements into 3 numbers z between −1 and +1, one per qubit. It is trained." },
+  { symbol: "z (latent values)", swatch: "#e9d5ff", text: "The encoder's 3 output numbers for this patient. They become qubit angles θ = (z+1)·π/2 (0 to π)." },
+  { symbol: "quantum layer", swatch: "#a78bfa", text: "A small quantum circuit on 3 qubits (ZZFeatureMap + a RealAmplitudes-style ansatz, run on a noiseless simulator). Its own weights are fixed at 0.5; it is not trained." },
+  { symbol: "expectation value ⟨Z⟩", text: "What the quantum layer outputs for one qubit: the average measurement on a −1 … +1 scale (+1 = always measured 0, −1 = always 1). The Bloch arrow's height shows it." },
+  { symbol: "classical head (Post-Net)", swatch: "#38bdf8", text: "A second small neural network that reads both z and ⟨Z⟩ and outputs the disease probability. It is trained." },
+  { symbol: "P(disease)", text: "The Post-Net's probability that this patient has the disease. At or above 50% the verdict is disease." },
+  { symbol: "✓ / ✗", text: "The verdict matches / doesn't match the patient's true diagnosis." },
+  { symbol: "particles", text: "Show the order the numbers flow through the network; they carry no extra information." },
+  { symbol: "F2 🎯", swatch: "#fbbf24", text: "The clinical target: a 0–1 score that counts missed sick patients twice as heavily as false alarms. Higher is better." },
+  { symbol: "ROC-AUC", text: "How well the model ranks sick above healthy patients: 1 = perfect, 0.5 = coin flip. Below 0.6 it is not reliable." },
+  { symbol: "training time", text: "How long Sandwich took to train in this run (as Tab 8's \"Latency\" measures it)." },
+  { symbol: "custom patient", text: "A slider-made patient has no precomputed Sandwich values, so only the architecture and the test metrics are shown." },
+];
+// --- end Sandwich scene legend ---
+// --- CKTA + Elite leaderboard scene legend (step 10) ---
+export const LEGEND_CKTA = [
+  { symbol: "Q-CKTA", swatch: "#f0abfc", text: "Bandwidth-scaled quantum kernel with Centered Kernel-Target Alignment: tries several bandwidths s, keeps the best-aligned one, mixes it with a classical RBF kernel and trains an SVM on the mix." },
+  { symbol: "quantum kernel K(s)", text: "The quantum similarity of every pair of training patients (1 = identical, 0 = completely different), drawn as a 3D landscape sorted healthy first, then disease. Height and brightness = K." },
+  { symbol: "bandwidth s", text: "Shrinks the patient angles before they go into the qubits. Too large and everyone looks different from everyone; too small and everyone looks alike." },
+  { symbol: "ideal pattern", text: "What a perfect kernel would look like: patients with the same diagnosis fully similar (1), different diagnoses not similar (0)." },
+  { symbol: "kernel-target alignment", text: "How closely the kernel's pattern of similarities matches the ideal pattern (centered, so the overall level doesn't count). It is computed before any classifier is trained." },
+  { symbol: "alignment score A_q(s)", swatch: "#a78bfa", text: "The kernel-target alignment of the quantum kernel at each s (bars). Higher is better; the gold bar is the best one, s*." },
+  { symbol: "RBF A_c", swatch: "#38bdf8", text: "The alignment of the classical RBF kernel on the same patients (reference line)." },
+  { symbol: "fusion weights", text: "CKTA mixes the two kernels by their alignments: RBF weight w_c = A_c / (A_c + A_q(s*)), quantum weight w_q = 1 − w_c." },
+  { symbol: "schematic", text: "Shown only if no real kernel matrix matching CKTA's alignments was exported: the tile then illustrates the idea, and only the bars are real values." },
+  { symbol: "F2 leaderboard", text: "Streamlit Tab 8's table: QuHaMA, Sandwich, CKTA and the RBF / Linear SVM on the same test patients, sorted by F2 (the clinical target). The other metrics are in the table under the chart." },
+  { symbol: "elite hybrid", swatch: "#a78bfa", text: "Violet bars with gold edges: the three hybrid quantum-classical models." },
+  { symbol: "classical", swatch: "#38bdf8", text: "Cyan bars: the classical RBF and Linear SVM baselines." },
+  { symbol: "★ clinical leader", swatch: "#fbbf24", text: "The best F2 on this disease (ties share it)." },
+  { symbol: "latency", text: "Each model's measured run time (Tab 8's Latency column)." },
+];
+// --- end CKTA + Elite leaderboard scene legend ---

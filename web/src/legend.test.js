@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderLegend, mountLegendToggle } from "./legend.js";
-import { LEGEND_1, LEGEND_2, LEGEND_3, LEGEND_4, LEGEND_5, LEGEND_6, LEGEND_BANDWIDTH, LEGEND_QUHAMA } from "./scenes/legends.js";
+import { LEGEND_1, LEGEND_2, LEGEND_3, LEGEND_4, LEGEND_5, LEGEND_6, LEGEND_BANDWIDTH, LEGEND_QUHAMA, LEGEND_SANDWICH, LEGEND_CKTA } from "./scenes/legends.js";
 
 const fakeEl = () => ({ innerHTML: "", hidden: false, _l: {}, classList: { toggle() {} }, setAttribute() {}, addEventListener(n, f) { this._l[n] = f; } });
 
@@ -56,6 +56,21 @@ describe("QuHaMA scene legend", () => {
     for (const want of ["Sandwich HQNN", "Q-CKTA", "kernel-target alignment", "leaderboard / F2"]) {
       expect(syms).toContain(want);
     }
+  });
+});
+
+describe("Sandwich and CKTA scene legends (steps 9-10)", () => {
+  it.each([[LEGEND_SANDWICH], [LEGEND_CKTA]])("is non-empty with string symbol/text", (L) => {
+    expect(L.length).toBeGreaterThan(0);
+    for (const it of L) { expect(typeof it.symbol).toBe("string"); expect(typeof it.text).toBe("string"); }
+  });
+  it("Sandwich covers the plain-language architecture terms", () => {
+    const syms = LEGEND_SANDWICH.map((it) => it.symbol).join(" | ");
+    for (const want of ["classical encoder", "quantum layer", "expectation value", "classical head"]) expect(syms).toContain(want);
+  });
+  it("CKTA covers alignment and the F2 leaderboard", () => {
+    const syms = LEGEND_CKTA.map((it) => it.symbol).join(" | ");
+    for (const want of ["kernel-target alignment", "alignment score", "F2 leaderboard"]) expect(syms).toContain(want);
   });
 });
 

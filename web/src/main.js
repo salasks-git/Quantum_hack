@@ -17,12 +17,14 @@ import { mountQpuPanel } from "./qpuPanel.js";
 import { mountMenu } from "./menu.js";
 import sceneBandwidth from "./scenes/sceneBandwidth.js";
 import sceneQuhama from "./scenes/sceneQuhama.js";
+import sceneSandwich from "./scenes/sceneSandwich.js";
+import sceneCkta from "./scenes/sceneCkta.js";
 import { mountCustomPatient, withCustomPatient, CUSTOM_LABEL } from "./customPatient.js"; // 22c
 import { qpuSelection, adoptData as adoptDataState, choosePatient } from "./tourState.js";
 
 // Step table: step n (1-based) = STEP_FACTORIES[n - 1]. Append new scenes here; the step count,
 // the step dots, Prev/Next bounds, the URL ?step= range and web/scripts/smoke.sh all derive from it.
-const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5, scene6, sceneBandwidth, sceneQuhama];
+const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5, scene6, sceneBandwidth, sceneQuhama, sceneSandwich, sceneCkta];
 const N_STEPS = STEP_FACTORIES.length;
 const clampStep = (n) => Math.min(N_STEPS, Math.max(1, n));
 const QPU_STEP = 6; // scene 6 shows the live-run panel
