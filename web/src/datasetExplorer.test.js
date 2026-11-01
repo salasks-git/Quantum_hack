@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { renderKpis, renderTable, renderStats, renderExplorer, renderError, MAX_ROWS } from "./datasetExplorer.js";
+import { readFileSync } from "node:fs";
+import { modelMetrics } from "./metrics.js";
+import { renderPerformance, performanceRows, renderKpis, renderTable, renderStats, renderExplorer, renderError, MAX_ROWS } from "./datasetExplorer.js";
 
 const fixture = (n = 4) => ({
   slug: "x", label: "<b>Lab</b>", columns: ["a<i>", "target"],
@@ -38,5 +40,43 @@ describe("datasetExplorer", () => {
   });
   it("stats table", () => {
     expect(renderStats(fixture())).toContain("Summary statistics");
+  });
+});
+
+describe("model performance section", () => {
+  const rd = (f) => JSON.parse(readFileSync(new URL(`../public/data/${f}`, import.meta.url), "utf8"));
+  const d = rd("vertebral_column.json"), e = rd("vertebral_column.elite.json");
+  it("renders 5 pipeline rows + 3 elite rows", () => {
+    const h = renderPerformance(d, e);
+    expect((h.match(/<tr class=/g) || []).length).toBe(8);
+    expect(h).toContain("Model performance on this dataset");
+    expect(h).toContain("QuHaMA");
+    expect(h).toContain("precomputed");
+  });
+  it("pipeline metrics equal modelMetrics", () => {
+    const { rows } = performanceRows(d, e);
+    for (const k of ["linear", "rbf", "qsvc", "vqc", "hybrid"]) {
+      const m = modelMetrics(d.test, k), r = rows.find((x) => x.key === k);
+      expect([r.f2, r.recall, r.precision, r.accuracy, r.auc]).toEqual([m.f2, m.recall, m.precision, m.accuracy, m.rocAuc]);
+    }
+  });
+  it("excludes a custom patient (label null)", () => {
+    const withCustom = { ...d, test: [...d.test, { ...d.test[0], label: null }] };
+    expect(performanceRows(withCustom, e).n).toBe(d.test.length);
+    expect(performanceRows(withCustom, e).rows[0].f2).toBe(performanceRows(d, e).rows[0].f2);
+  });
+  it("missing elite.json shows the note and 5 rows", () => {
+    const h = renderPerformance(d, null);
+    expect(h).toContain("Elite results not exported for this dataset");
+    expect((h.match(/<tr class=/g) || []).length).toBe(5);
+  });
+  it("highlights the F2 leader and labels Custom run", () => {
+    const { rows } = performanceRows(d, e);
+    const best = rows.reduce((a, b) => (b.f2 > a.f2 ? b : a));
+    const h = renderPerformance(d, e, true);
+    expect(h).toContain(`<span class="ds-bn">\u{1F3C6} ${best.name}</span>`);
+    expect((h.match(/\u{1F3C6}/gu) || []).length).toBe(2);
+    expect(h).toContain("Custom run");
+    expect(h).toContain("precomputed (default settings)");
   });
 });
