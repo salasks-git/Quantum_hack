@@ -76,6 +76,38 @@ All datasets are automatically cleaned, labeled into standardized binary targets
 
 ---
 
+## 🧠 Six Hybrid Quantum-Classical Architectures (`approaches/`)
+
+Beyond classical baselines and pure QML models, Q-Med packages six standalone, state-of-the-art hybrid architectures combining neural networks and quantum circuits to mitigate NISQ hardware noise and resolve dimensional bottlenecks.
+
+Each approach is self-contained with its own mathematical documentation and evaluation pipeline in [`approaches/`](approaches/):
+
+| Approach | File | Coupling Mechanism | Feature Compression | Primary Clinical Target |
+| :--- | :--- | :--- | :--- | :--- |
+| **Approach 1: QuHaMA** | [`approach_1.py`](approaches/approach_1.py) (aliased as `approach:1.py`) | Dual-Branch Split + Gating | Non-linear PyTorch Encoder | Patient-specific dynamic weight allocation ($w_c, w_q$) |
+| **Approach 2: Dual-Reader** | [`approach_2.py`](approaches/approach_2.py) (aliased as `approach:2.py`) | Decision Soft-Voting | Unsupervised PCA | Bayesian posterior calibration $P(y=1 \mid x)$ |
+| **Approach 3: Composite Mercer** | [`approach_3.py`](approaches/approach_3.py) (aliased as `approach:3.py`) | Convex Kernel Combination | Direct Sum $\mathcal{H}_{\text{RBF}} \oplus \mathcal{H}_{\text{Q}}$ | Global convex quadratic optimization |
+| **Approach 4: Residual Learning** | [`approach_4.py`](approaches/approach_4.py) (aliased as `approach:4.py`) | ResNet-Style Boosting | Unsupervised PCA | NISQ hardware noise insulation |
+| **Approach 5: Sandwich HQNN** | [`approach_5.py`](approaches/approach_5.py) (aliased as `approach:5.py`) | End-to-End Layer Embedding | Deep MLP Pre-Net | High-speed gradient descent & readout noise absorption |
+| **Approach 6: Q-CKTA Hybrid** | [`approach_6.py`](approaches/approach_6.py) (aliased as `approach:6.py`) | Centered Target Alignment | Unsupervised PCA | Geometric concentration resolution & optimal bandwidth |
+
+### 📊 5-Dataset Empirical Benchmark Summary
+
+Evaluated across all five clinical disease cohorts under identical stratified 75/25 train/test splits (`seed=42`):
+
+| Approach | Mean Accuracy | Mean $F_2$-Score | Mean Precision | Mean Sensitivity (Recall) | Mean ROC-AUC | Mean Latency | Overall Rank |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Approach 5: Neural-Quantum Sandwich HQNN** | **85.4%** | **0.796** | **82.3%** | **79.7%** | **0.884** | **0.16 s** | **🥇 1st (Best Overall & Fastest)** |
+| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | 78.6% | 0.708 | **85.3%** | 71.7% | 0.737 | **0.23 s** | **🥈 2nd (Fastest Kernel)** |
+| **Approach 1: QuHaMA** | 78.4% | **0.728** | 74.9% | **73.5%** | **0.840** | 9.20 s | **🥉 3rd (Best Adaptive Gating)** |
+| **Approach 2: Dual-Reader Soft-Voting** | 77.6% | 0.688 | 84.8% | 69.5% | 0.803 | 3.49 s | 4th |
+| **Approach 3: Composite Mercer Kernel** | 74.8% | 0.717 | 71.2% | 72.2% | 0.806 | 3.55 s | 5th |
+| **Approach 4: Quantum Residual Learning** | 74.6% | 0.680 | 71.3% | 67.8% | 0.810 | 3.63 s | 6th |
+
+> Detailed dataset-by-dataset tables, ROC-AUC comparisons, and mathematical proofs are available in [`approaches/comparison.md`](approaches/comparison.md) and raw metric logs in [`approaches/benchmark_results.csv`](approaches/benchmark_results.csv).
+
+---
+
 ## 🖥️ Streamlit Interactive UI Overview
 
 Launch the diagnostic dashboard (`streamlit run app.py`) to explore eight specialized modules:
@@ -201,9 +233,20 @@ The tour numbers are precomputed with a fixed seed (42), 3 qubits and 100 patien
 Quantum_hack/
 ├── AGENTS.md                  # Autonomous agent setup instructions & project context
 ├── README.md                  # Comprehensive project documentation
+├── RESEARCH_AND_THEORY.md     # Deep-dive theoretical compendium (Hilbert spaces, noise, feature maps)
+├── PROJECT_OVERVIEW.md        # Comprehensive technical architecture & runbook
 ├── app.py                     # Streamlit entry point: sidebar → data prep → training → tabs
 ├── requirements.txt           # Pinned dependencies (Qiskit 1.x, Torch, Scikit-Learn, Streamlit)
 ├── .gitignore                 # Excludes venvs, caches, checkpoints; tracks clean CSVs
+├── approaches/                # Standalone hybrid quantum-classical architectures & benchmarks
+│   ├── approach_1.py          # QuHaMA (Neural Encoder + Dual Branch + Meta-Gating) [alias: approach:1.py]
+│   ├── approach_2.py          # Dual-Reader Soft-Voting Ensemble [alias: approach:2.py]
+│   ├── approach_3.py          # Geometric Composite Mercer Kernel Fusion [alias: approach:3.py]
+│   ├── approach_4.py          # Quantum-Classical Residual Learning [alias: approach:4.py]
+│   ├── approach_5.py          # Neural-Quantum Sandwich HQNN [alias: approach:5.py]
+│   ├── approach_6.py          # Bandwidth-Scaled Q-CKTA Hybrid [alias: approach:6.py]
+│   ├── benchmark_results.csv  # Full 5-dataset empirical evaluation logs
+│   └── comparison.md          # Multi-dataset benchmark report & architecture analysis
 ├── qmed/                      # Pipeline package (core modules have no Streamlit dependency)
 │   ├── config.py              # Dataset registry, UI option lists, model names, complexity labels
 │   ├── data.py                # CSV loading + standardize → PCA → [0, π] angle preprocessing
@@ -211,6 +254,7 @@ Quantum_hack/
 │   ├── models.py              # Trains & times Linear SVM, RBF SVM, QSVC, VQC
 │   ├── metrics.py             # Benchmark and timing tables
 │   ├── bandwidth.py           # Kernel bandwidth CV sweep + kernel diagnostics
+│   ├── quhama.py              # PyTorch + Qiskit QuHaMA hybrid model implementation
 │   └── ui/                    # Streamlit UI
 │       ├── sidebar.py         # Settings panel → PipelineConfig
 │       ├── plots.py           # All matplotlib/seaborn figures
@@ -220,14 +264,18 @@ Quantum_hack/
 │       ├── tab_profiler.py    # Tab 4
 │       ├── tab_ibm_hardware.py # Tab 5
 │       ├── tab_simulator.py   # Tab 6
-│       └── tab_bandwidth.py   # Tab 7: Kernel Bandwidth Lab
+│       ├── tab_bandwidth.py   # Tab 7: Kernel Bandwidth Lab
+│       └── tab_quhama.py      # Tab 8: QuHaMA Adaptive Architecture Lab
 ├── data/                      # Cleaned clinical benchmark datasets
 │   ├── breast_cancer_wisconsin.csv
 │   ├── diabetes_pima.csv
 │   ├── heart_disease_statlog.csv
 │   ├── parkinsons_vocal.csv
 │   └── vertebral_column.csv
-├── tests/                     # pytest tests (models, tour data export)
+├── tests/                     # pytest tests (models, tour data export, QuHaMA)
+│   ├── test_models.py
+│   ├── test_export.py
+│   └── test_quhama.py
 ├── docs/                      # Design specs and implementation plans
 ├── web/                       # Three.js 3D diagnosis tour (Vite)
 │   ├── src/                   # Scenes, scene manager, data loader
