@@ -124,3 +124,25 @@ button:hover,select:hover{border-color:var(--accent)}
 .qp-tag.qp-new{background:#4ade80;color:#070b16}
 .qp-res b{color:#fff}
 @media (max-width:899px){#qpu-panel{width:260px}#stage.qpu-on #caption{right:284px}}
+
+/* Task 22c: IBM backend list in the scene 6 panel */
+.qp-bk{margin-top:8px;border-top:1px solid #2a3350;padding-top:6px}
+.qp-bk-t{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:2px}
+.qp-bk-t th{color:var(--muted);text-align:left;font-weight:600;padding:1px 4px}
+.qp-bk-t td{padding:1px 4px;border-top:1px solid #1e293b}
+
+/* Task 22c: custom patient panel */
+#custom-panel{position:absolute;right:12px;top:12px;z-index:4;width:250px;background:rgba(7,11,22,.92);border:1px solid #3b3366;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.4;box-shadow:0 4px 24px rgba(0,0,0,.35)}
+#custom-panel[hidden]{display:none}
+#custom-btn.on{background:var(--accent);color:#070b16;border-color:var(--accent)}
+.cp-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px}
+.cp-close{background:none;border:none;color:var(--muted);cursor:pointer}
+.cp-note{color:var(--muted);font-size:11.5px;margin:2px 0 6px}
+.cp-row{display:grid;grid-template-columns:22px 1fr 36px;gap:6px;align-items:center;color:var(--text);margin:3px 0}
+.cp-row input{width:100%;accent-color:var(--accent)}
+.cp-row input:disabled{opacity:.4}
+.cp-actions{margin-top:6px}
+.cp-status{min-height:16px;margin-top:6px;color:var(--muted);font-size:12px}
+.cp-status.cp-err{color:#fca5a5}
+.cp-status code{font-size:11.5px;background:#0b1222;border:1px solid #2a3350;border-radius:4px;padding:0 4px;color:#e9d5ff}
+.cp-qpu{margin:6px 0 0}

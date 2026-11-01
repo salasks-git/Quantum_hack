@@ -6,7 +6,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 // Pure: every model's prediction for every test patient, plus per-model summary.
 export function buildPredictionTable(data, keys = MODEL_KEYS) {
   const tests = data.test || [];
-  const n = tests.length;
+  const n = tests.filter((p) => p.label != null).length;
   const summary = {};
   keys.forEach((k) => { summary[k] = { accuracy: 0, missed: 0, sick: 0 }; });
   const rows = tests.map((p, i) => {
@@ -14,7 +14,8 @@ export function buildPredictionTable(data, keys = MODEL_KEYS) {
     keys.forEach((k) => {
       const m = p.models && p.models[k];
       if (!m) return;
-      const correct = m.pred === p.label;
+      const unknown = p.label == null;
+      const correct = unknown ? null : m.pred === p.label;
       cells[k] = { pred: m.pred, prob: m.prob, correct, borderline: verdictFor(m).borderline };
       if (correct) summary[k].accuracy += 1;
       if (p.label === 1) { summary[k].sick += 1; if (m.pred === 0) summary[k].missed += 1; }
@@ -26,7 +27,7 @@ export function buildPredictionTable(data, keys = MODEL_KEYS) {
 }
 
 export function renderPredictionTable(container, table, { currentPatient = -1, onSelect = () => {}, keys = MODEL_KEYS } = {}) {
-  const n = table.rows.length;
+  const n = table.rows.filter((r) => r.label != null).length;
   const head = `<tr><th>#</th><th>Actual</th>${keys.map((k) => `<th>${esc(MODEL_LABELS[k] || k)}</th>`).join("")}</tr>`;
   const body = table.rows.map((r) => {
     const cells = keys.map((k) => {
@@ -35,12 +36,12 @@ export function renderPredictionTable(container, table, { currentPatient = -1, o
       const sick = c.pred === 1;
       return `<td><span class="ap-chip ${sick ? "sick" : "well"}">${sick ? "DISEASE" : "HEALTHY"}</span> `
         + `<span class="ap-prob">${Math.round(c.prob * 100)}%</span> `
-        + `<span class="${c.correct ? "ap-ok" : "ap-bad"}">${c.correct ? "✓" : "✗"}</span>`
+        + (c.correct == null ? "" : `<span class="${c.correct ? "ap-ok" : "ap-bad"}">${c.correct ? "✓" : "✗"}</span>`)
         + `${c.borderline ? ` <span class="ap-warn" title="borderline">⚠</span>` : ""}</td>`;
     }).join("");
     const cls = r.index === currentPatient ? ' class="cur"' : "";
     return `<tr data-index="${esc(r.index)}"${cls}><td>${esc(r.index)}</td>`
-      + `<td><span class="ap-act ${r.label === 1 ? "sick" : "well"}">${r.label === 1 ? "Disease" : "Healthy"}</span></td>${cells}</tr>`;
+      + `<td>${r.label == null ? `<span class="ap-act">Unknown (custom)</span>` : `<span class="ap-act ${r.label === 1 ? "sick" : "well"}">${r.label === 1 ? "Disease" : "Healthy"}</span>`}</td>${cells}</tr>`;
   }).join("");
   const foot = `<tr class="ap-foot"><td colspan="2">Per model</td>${keys.map((k) => {
     const s = table.summary[k];
@@ -69,7 +70,7 @@ export function renderMetrics(container, test, keys = MODEL_KEYS) {
       + `<tr><th>Actual Healthy</th>${cell(tn, max, "ok")}${cell(fp, max, "bad")}</tr>`
       + `<tr><th>Actual Disease</th>${cell(fn, max, "bad")}${cell(tp, max, "ok")}</tr></table></div>`;
   }).join("");
-  container.innerHTML = `<div class="ap-mt">📊 Metrics · ${test.length} test patients</div>`
+  container.innerHTML = `<div class="ap-mt">📊 Metrics · ${test.filter((p) => p.label != null).length} test patients</div>`
     + `<table class="ap-metrics"><thead>${head}</thead><tbody>${rows}</tbody></table>`
     + `<div class="ap-mt">Confusion matrices · Actual × Predicted</div><div class="ap-cms">${cms}</div>`;
 }
@@ -86,7 +87,7 @@ export function mountAllPatients(button, panel, { getData, getPatient, onSelect 
     const data = getData();
     if (!open || !data) return;
     const t = buildPredictionTable(data);
-    title.textContent = `All test patients · ${data.label} · ${t.rows.length} patients the models never saw`;
+    title.textContent = `All test patients · ${data.label} · ${t.rows.filter((r) => r.label != null).length} patients the models never saw`;
     renderPredictionTable(body, t, { currentPatient: getPatient(), onSelect: (i) => { setOpen(false); onSelect(i); } });
     renderMetrics(metricsBox, data.test || []);
     body.appendChild(metricsBox);

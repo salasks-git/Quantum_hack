@@ -179,7 +179,7 @@ export default function createScene(ctx) {
   const pcs = p.pca.map((v, k) => `PC${k + 1} ${n2(v)}`).join(" · ");
   const xs = p.angles.map((a, k) => `x${SUB[k]} = ${n2(a)}`).join(", ");
   const cap = {
-    raw: `<b>1 · Patient record</b> · ${N} raw measurements on very different scales — largest: <b>${pretty(names[iMax])} = ${fmt(p.raw[iMax])}</b>, smallest: ${pretty(names[iMin])} = ${fmt(p.raw[iMin])}`,
+    raw: `<b>1 · Patient record</b> · ${N} raw measurements${p.reconstructed ? " reconstructed from the 3 scores (approximate)" : ""} on very different scales — largest: <b>${pretty(names[iMax])} = ${fmt(p.raw[iMax])}</b>, smallest: ${pretty(names[iMin])} = ${fmt(p.raw[iMin])}`,
     std: `<b>2 · Standardise</b> · all ${N} measurements rescaled by the training patients' mean and spread (0σ = typical) · most unusual: <b>${pretty(names[top])} ${sgn(p.standardized[top])}σ</b>`,
     pca: `<b>3 · Compress (PCA)</b> · ${N} measurements squeezed into 3 principal components: <b>${pcs}</b> (orb size = |value|)`,
     enc: `<b>4 · Encode</b> · each component becomes a qubit angle: <b>${xs}</b> rad · Hadamard tips |0⟩ to the equator, then a phase turn of 2x · <i>first encoding layer only; later layers entangle the qubits</i>`,

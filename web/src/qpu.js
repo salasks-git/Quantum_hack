@@ -132,3 +132,27 @@ export async function pollStatus(jobId, { onUpdate, signal, intervalMs = 5000, b
     await sleep(intervalMs, signal);
   }
 }
+
+/**
+ * GET /api/qpu/backends: lists IBM backends and queues (contacts IBM, submits nothing, uses no QPU time).
+ * Only ever called from an explicit user click.
+ * -> {ok:true, rows:[{name, num_qubits, operational, pending_jobs}] sorted by queue}
+ *  | {ok:false, error}
+ */
+export async function backends({ base = API_BASE } = {}) {
+  let res;
+  try {
+    res = await doFetch(`${base}/backends`, { cache: "no-store" });
+  } catch {
+    return { ok: false, error: "Start the helper: python scripts/qpu_server.py" };
+  }
+  const body = await readJson(res);
+  if (!res.ok || !Array.isArray(body)) {
+    return { ok: false, error: String((body && body.error) || `Helper answered HTTP ${res.status}`) };
+  }
+  const rows = body.map((b) => ({
+    name: String(b.name), num_qubits: Number(b.num_qubits) || 0, operational: !!b.operational,
+    pending_jobs: Number.isFinite(Number(b.pending_jobs)) ? Number(b.pending_jobs) : null,
+  })).sort((a, b) => (a.pending_jobs ?? Infinity) - (b.pending_jobs ?? Infinity) || a.name.localeCompare(b.name));
+  return { ok: true, rows };
+}
