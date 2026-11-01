@@ -89,3 +89,27 @@ def train_vs_inference_bars(results: dict):
     ax.grid(axis="x", alpha=0.3)
     fig.tight_layout()
     return fig
+
+
+def pareto_frontier_scatter(results: dict, y_test):
+    from sklearn.metrics import fbeta_score
+    names = list(results.keys())
+    times = [results[m]["total_time"] for m in names]
+    f2_scores = [fbeta_score(y_test, results[m]["pred"], beta=2, zero_division=0) for m in names]
+    colors = ["#2563eb", "#0284c7", "#7c3aed", "#d946ef"]
+
+    fig, ax = plt.subplots(figsize=(6, 3.8))
+    for i, (name, t, f2) in enumerate(zip(names, times, f2_scores)):
+        ax.scatter(t, f2, s=160, color=colors[i % len(colors)], edgecolors="black", zorder=5, label=name)
+        short_name = name.split("(")[-1].replace(")", "").strip() if "(" in name else name
+        ax.annotate(f" {short_name}", (t, f2), fontsize=9, fontweight="bold", xytext=(5, 4), textcoords="offset points")
+
+    ax.set_xlabel("Total Wall-Clock Time (Seconds, log scale)")
+    ax.set_xscale("log")
+    ax.set_ylabel("Clinical Target (F2-Score)")
+    ax.set_ylim(-0.05, 1.1)
+    ax.set_title("Efficiency Frontier: Clinical Target (F2) vs. Latency")
+    ax.grid(True, which="both", alpha=0.3)
+    ax.legend(loc="lower left", fontsize=8)
+    fig.tight_layout()
+    return fig

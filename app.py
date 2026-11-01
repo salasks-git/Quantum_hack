@@ -64,7 +64,7 @@ with tab1:
 with tab2:
     tab_circuits.render(cfg, feature_map, ansatz, results)
 with tab3:
-    tab_benchmarks.render(cfg, results, data.y_test)
+    tab_benchmarks.render(cfg, data, results)
 with tab4:
     tab_profiler.render(cfg, data, results)
 with tab5:
