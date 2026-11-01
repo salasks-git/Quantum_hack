@@ -59,6 +59,7 @@ vqc_iter = st.sidebar.slider("7. VQC Max Iterations (COBYLA)", min_value=15, max
 # --- 1. OFFLINE DATA LOADING & PREPROCESSING ---
 @st.cache_data
 def load_and_preprocess(dataset_label: str, max_samples: int, n_qubits: int):
+    t_prep_start = time.time()
     csv_path = DATASET_MAP[dataset_label]
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
@@ -98,10 +99,11 @@ def load_and_preprocess(dataset_label: str, max_samples: int, n_qubits: int):
 
     X_train_q = angle_scaler.fit_transform(X_train_pca)
     X_test_q = angle_scaler.transform(X_test_pca)
+    prep_time = time.time() - t_prep_start
 
-    return df, feature_names, X_train_q, X_test_q, y_train, y_test, pca
+    return df, feature_names, X_train_q, X_test_q, y_train, y_test, pca, prep_time
 
-df, feature_names, X_train_q, X_test_q, y_train, y_test, pca = load_and_preprocess(
+df, feature_names, X_train_q, X_test_q, y_train, y_test, pca, prep_time = load_and_preprocess(
     selected_dataset_label, n_samples, n_qubits
 )
 
@@ -119,42 +121,66 @@ def train_pipeline(dataset_label, X_train_q, X_test_q, y_train, y_test, _feature
     results = {}
 
     # 1. Classical Linear SVM
-    t0 = time.time()
+    t_tr_0 = time.time()
     svm_lin = SVC(kernel="linear", probability=True, random_state=42)
     svm_lin.fit(X_train_q, y_train)
+    train_time_lin = time.time() - t_tr_0
+
+    t_inf_0 = time.time()
     y_pred_lin = svm_lin.predict(X_test_q)
     y_prob_lin = svm_lin.predict_proba(X_test_q)[:, 1]
+    inf_time_lin = time.time() - t_inf_0
+
     results["Classical SVM (Linear)"] = {
-        "model": svm_lin, "pred": y_pred_lin, "prob": y_prob_lin, "time": time.time() - t0
+        "model": svm_lin, "pred": y_pred_lin, "prob": y_prob_lin,
+        "train_time": train_time_lin, "inf_time": inf_time_lin,
+        "total_time": train_time_lin + inf_time_lin,
+        "time": train_time_lin + inf_time_lin
     }
 
     # 2. Classical RBF SVM
-    t0 = time.time()
+    t_tr_0 = time.time()
     svm_rbf = SVC(kernel="rbf", probability=True, random_state=42)
     svm_rbf.fit(X_train_q, y_train)
+    train_time_rbf = time.time() - t_tr_0
+
+    t_inf_0 = time.time()
     y_pred_rbf = svm_rbf.predict(X_test_q)
     y_prob_rbf = svm_rbf.predict_proba(X_test_q)[:, 1]
+    inf_time_rbf = time.time() - t_inf_0
+
     results["Classical SVM (RBF)"] = {
-        "model": svm_rbf, "pred": y_pred_rbf, "prob": y_prob_rbf, "time": time.time() - t0
+        "model": svm_rbf, "pred": y_pred_rbf, "prob": y_prob_rbf,
+        "train_time": train_time_rbf, "inf_time": inf_time_rbf,
+        "total_time": train_time_rbf + inf_time_rbf,
+        "time": train_time_rbf + inf_time_rbf
     }
 
     # 3. Quantum Kernel SVM (QSVC)
-    t0 = time.time()
     sampler = StatevectorSampler()
     fidelity = ComputeUncompute(sampler=sampler)
     q_kernel = FidelityQuantumKernel(feature_map=_feature_map, fidelity=fidelity)
     qsvc = QSVC(quantum_kernel=q_kernel, probability=True, random_state=42)
+
+    t_tr_0 = time.time()
     qsvc.fit(X_train_q, y_train)
+    train_time_qsvc = time.time() - t_tr_0
+
+    t_inf_0 = time.time()
     y_pred_qsvc = qsvc.predict(X_test_q)
     y_prob_qsvc = qsvc.predict_proba(X_test_q)[:, 1]
+    inf_time_qsvc = time.time() - t_inf_0
+
     kernel_matrix = q_kernel.evaluate(x_vec=X_train_q)
     results["Quantum Kernel SVM (QSVC)"] = {
-        "model": qsvc, "pred": y_pred_qsvc, "prob": y_prob_qsvc, "time": time.time() - t0,
+        "model": qsvc, "pred": y_pred_qsvc, "prob": y_prob_qsvc,
+        "train_time": train_time_qsvc, "inf_time": inf_time_qsvc,
+        "total_time": train_time_qsvc + inf_time_qsvc,
+        "time": train_time_qsvc + inf_time_qsvc,
         "kernel_matrix": kernel_matrix
     }
 
     # 4. Variational Quantum Classifier (VQC)
-    t0 = time.time()
     loss_history = []
     def callback(weights, obj_func_eval):
         loss_history.append(obj_func_eval)
@@ -166,10 +192,20 @@ def train_pipeline(dataset_label, X_train_q, X_test_q, y_train, y_test, _feature
         optimizer=COBYLA(maxiter=vqc_iter),
         callback=callback
     )
+
+    t_tr_0 = time.time()
     vqc.fit(X_train_q, y_train)
+    train_time_vqc = time.time() - t_tr_0
+
+    t_inf_0 = time.time()
     y_pred_vqc = np.asarray(vqc.predict(X_test_q)).ravel().astype(int)
+    inf_time_vqc = time.time() - t_inf_0
+
     results["Variational Quantum (VQC)"] = {
-        "model": vqc, "pred": y_pred_vqc, "prob": y_pred_vqc, "time": time.time() - t0,
+        "model": vqc, "pred": y_pred_vqc, "prob": y_pred_vqc,
+        "train_time": train_time_vqc, "inf_time": inf_time_vqc,
+        "total_time": train_time_vqc + inf_time_vqc,
+        "time": train_time_vqc + inf_time_vqc,
         "loss_history": loss_history
     }
 
@@ -182,11 +218,12 @@ with st.spinner(f"Simulating {n_qubits}-Qubit Hilbert Space on {selected_dataset
     )
 
 # --- TABS FOR DEMO ---
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 1. Dataset & Quantum Preprocessing",
     "⚛️ 2. Quantum Circuits & Kernel Matrix",
     "🏆 3. Classical vs Quantum Benchmarks",
-    "🩺 4. Live Patient Diagnostic Simulator"
+    "⏱️ 4. Execution Time & Quantum Latency Profiler",
+    "🩺 5. Live Patient Diagnostic Simulator"
 ])
 
 with tab1:
@@ -198,6 +235,7 @@ with tab1:
         - **Active Cohort Size:** `{len(X_train_q) + len(X_test_q)}` patients (`{len(X_train_q)}` train / `{len(X_test_q)}` test)
         - **Variance Captured by {n_qubits} PCA Components:** `{np.sum(pca.explained_variance_ratio_):.1%}`
         - **Quantum Angle Mapping:** Standardized $\\to$ PCA({n_qubits}) $\\to$ Scaled to $[0, \\pi]$ radians to prevent $2\\pi$ Bloch sphere phase aliasing.
+        - **Preprocessing Computation Time:** `{prep_time*1000:.2f} ms`
         """)
         st.dataframe(df.head(8), use_container_width=True)
     with col2:
@@ -255,7 +293,7 @@ with tab3:
             "Precision": f"{precision_score(y_test, y_p, zero_division=0):.3f}",
             "Recall (Sensitivity)": f"{recall_score(y_test, y_p, zero_division=0):.3f}",
             "ROC-AUC": f"{roc_auc_score(y_test, res['prob']):.3f}",
-            "Compute Time": f"{res['time']:.2f}s"
+            "Compute Time": f"{res['total_time']:.3f}s" if res['total_time'] >= 0.01 else f"{res['total_time']*1000:.1f}ms"
         })
     st.table(pd.DataFrame(rows))
 
@@ -273,6 +311,114 @@ with tab3:
             st.pyplot(fig_cm)
 
 with tab4:
+    st.subheader("⏱️ Execution Time & Computational Latency Profiler")
+    st.markdown(
+        f"Granular timing breakdown of each technique across **{len(X_train_q)}** training samples "
+        f"and **{len(X_test_q)}** unseen test samples in a **{n_qubits}**-qubit ($2^{{{n_qubits}}} = {2**n_qubits}$-dimensional Hilbert space)."
+    )
+
+    # Top KPI row
+    m1, m2, m3, m4, m5 = st.columns(5)
+    with m1:
+        st.metric("Quantum Preprocessing", f"{prep_time*1000:.1f} ms", help="StandardScaler + PCA + Angle Scaling")
+    with m2:
+        st.metric("Linear SVM Total", f"{results['Classical SVM (Linear)']['total_time']*1000:.1f} ms")
+    with m3:
+        st.metric("RBF SVM Total", f"{results['Classical SVM (RBF)']['total_time']*1000:.1f} ms")
+    with m4:
+        st.metric("QSVC (Quantum Kernel)", f"{results['Quantum Kernel SVM (QSVC)']['total_time']:.2f} s")
+    with m5:
+        st.metric("VQC (Variational)", f"{results['Variational Quantum (VQC)']['total_time']:.2f} s")
+
+    st.divider()
+
+    # Visual Comparison Charts
+    col_plot1, col_plot2 = st.columns(2)
+    model_names = list(results.keys())
+
+    with col_plot1:
+        st.markdown("#### Total End-to-End Execution Time by Technique")
+        total_times = [results[m]["total_time"] for m in model_names]
+        colors = ["#2563eb", "#0284c7", "#7c3aed", "#d946ef"]
+
+        fig_time, ax_time = plt.subplots(figsize=(6, 3.8))
+        bars = ax_time.barh(model_names, total_times, color=colors, edgecolor="black", alpha=0.85)
+        ax_time.set_xlabel("Total Execution Time (Seconds)")
+        ax_time.set_title("End-to-End Wall-Clock Latency (Train + Test)")
+        for bar in bars:
+            w = bar.get_width()
+            ax_time.text(w + max(total_times)*0.02, bar.get_y() + bar.get_height()/2,
+                         f"{w:.3f}s" if w >= 0.01 else f"{w*1000:.1f}ms",
+                         va="center", ha="left", fontsize=9, fontweight="bold")
+        ax_time.set_xlim(0, max(total_times) * 1.3)
+        ax_time.grid(axis="x", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig_time)
+
+    with col_plot2:
+        st.markdown("#### Training vs. Test Inference Time Breakdown")
+        train_times = [results[m]["train_time"] for m in model_names]
+        inf_times = [results[m]["inf_time"] for m in model_names]
+
+        fig_breakdown, ax_b = plt.subplots(figsize=(6, 3.8))
+        y_pos = np.arange(len(model_names))
+        ax_b.barh(y_pos, train_times, label="Training / Kernel Eval", color="#4f46e5", alpha=0.85, edgecolor="black")
+        ax_b.barh(y_pos, inf_times, left=train_times, label="Test Inference", color="#06b6d4", alpha=0.85, edgecolor="black")
+        ax_b.set_yticks(y_pos)
+        ax_b.set_yticklabels(model_names)
+        ax_b.set_xlabel("Time (Seconds)")
+        ax_b.set_title("Train vs Inference Breakdown")
+        ax_b.legend(loc="lower right")
+        ax_b.grid(axis="x", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig_breakdown)
+
+    st.divider()
+
+    # Detailed Table Breakdown
+    st.markdown("#### Granular Computational Profiling & Scaling Metrics")
+    n_test_samples = len(X_test_q)
+    timing_data = []
+    complexity_map = {
+        "Classical SVM (Linear)": "O(N_train · d)",
+        "Classical SVM (RBF)": "O(N_train² · d)",
+        "Quantum Kernel SVM (QSVC)": "O(N_train² · 2ⁿ)",
+        "Variational Quantum (VQC)": "O(N_train · Iters · Depth)"
+    }
+
+    baseline_total = results["Classical SVM (RBF)"]["total_time"]
+
+    for name, res in results.items():
+        t_tr = res["train_time"]
+        t_inf = res["inf_time"]
+        t_tot = res["total_time"]
+        per_sample_ms = (t_inf / n_test_samples) * 1000
+        throughput = n_test_samples / t_inf if t_inf > 0 else float("inf")
+        ratio_vs_rbf = t_tot / baseline_total if baseline_total > 0 else 1.0
+
+        timing_data.append({
+            "Technique": name,
+            "Training Time": f"{t_tr:.3f} s" if t_tr >= 0.01 else f"{t_tr*1000:.1f} ms",
+            "Inference Time (Test)": f"{t_inf:.3f} s" if t_inf >= 0.01 else f"{t_inf*1000:.1f} ms",
+            "Total Process Time": f"{t_tot:.3f} s" if t_tot >= 0.01 else f"{t_tot*1000:.1f} ms",
+            "Latency / Patient": f"{per_sample_ms:.2f} ms",
+            "Throughput": f"{throughput:.1f} patients/s",
+            "Overhead vs Classical RBF": f"{ratio_vs_rbf:.1f}x" if ratio_vs_rbf >= 1.0 else f"{1/ratio_vs_rbf:.1f}x faster",
+            "Complexity": complexity_map.get(name, "N/A")
+        })
+
+    st.dataframe(pd.DataFrame(timing_data), use_container_width=True)
+
+    with st.expander("💡 Understanding Quantum Simulation Latency vs. Physical QPU Execution"):
+        st.markdown(r"""
+        - **Why are Classical SVMs so fast ($<5\text{ ms}$)?** Classical SVMs use optimized C++ libraries (`libsvm`) with cache-friendly matrix operations in Euclidean space.
+        - **Where is the Quantum Time Spent?**
+          - **QSVC:** Must evaluate $\frac{N(N-1)}{2}$ pairwise state fidelities $|\langle \psi(\vec{x}_i) | \psi(\vec{x}_j) \rangle|^2$. On a classical CPU simulator, each fidelity requires multiplying $2^n \times 2^n$ state vectors.
+          - **VQC:** Evaluates quantum circuits at every iteration of the `COBYLA` optimizer. For 35 iterations across the training cohort, this requires hundreds of circuit simulations.
+        - **Real Quantum Hardware (QPU) Perspective:** On physical superconducting QPUs (like IBM Quantum Heron or Eagle), gate execution takes $\approx 20\text{--}100\text{ ns}$. The quantum state evolution occurs naturally in hardware in $O(1)$ depth rather than classical $2^n$ statevector matrix manipulation.
+        """)
+
+with tab5:
     st.subheader("🩺 Real-Time Quantum Patient Diagnostic Inference")
     st.markdown("Adjust the qubit rotation angles $\\vec{x} \\in [0, \\pi]$ to compare live inference between **QSVC** and **Classical RBF SVM**:")
     sliders = []

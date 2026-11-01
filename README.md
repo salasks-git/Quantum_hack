@@ -80,7 +80,11 @@ Launch the diagnostic dashboard (`streamlit run app.py`) to explore four special
 3. **🏆 Tab 3 — Apples-to-Apples Benchmarks:**
    - Rigorous comparison metrics: Test Accuracy, F1-Score (Disease), Precision, Sensitivity (Recall), ROC-AUC, and Execution Latency.
    - Side-by-side $2 \times 2$ confusion matrices across all 4 classical and quantum models on identical test partitions.
-4. **🩺 Tab 4 — Live Patient Diagnostic Simulator:**
+4. **⏱️ Tab 4 — Execution Time & Quantum Latency Profiler:**
+   - Granular wall-clock profiling tracking preprocessing, training, and test inference times.
+   - Side-by-side comparative horizontal bar charts and stacked train vs. inference visualizations.
+   - Per-patient latency (ms) and throughput (patients/sec) analysis with theoretical scaling complexity ($O(\cdot)$).
+5. **🩺 Tab 5 — Live Patient Diagnostic Simulator:**
    - Real-time clinical inference slider module allowing practitioners to manipulate patient principal feature angles.
    - Live side-by-side disease prediction and calibrated confidence metrics between **QSVC** and **Classical RBF SVM**.
 
