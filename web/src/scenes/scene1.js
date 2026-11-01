@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LEGEND_1 } from "./legends.js";
 import {
   PALETTE, ease, seg, blochSphere, firstLayerState, textSprite, glowSprite,
   setOpacity, disposeTree, addLights,
@@ -187,6 +188,7 @@ export default function createScene(ctx) {
   const tmp = new THREE.Vector3();
   return {
     title: "Patient becomes qubits",
+    legend: LEGEND_1,
     scene,
     cameraPos: [0, 2.1, 6.6],
     duration,

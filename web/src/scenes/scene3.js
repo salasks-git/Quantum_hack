@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { LEGEND_3 } from "./legends.js";
 import {
   PALETTE, ease, seg, blochSphere, firstLayerState, textSprite, glowSprite, setOpacity, disposeTree, addLights,
 } from "./common.js";
@@ -203,6 +204,7 @@ export default function createScene(ctx) {
 
   return {
     title: "QSVC quantum similarity",
+    legend: LEGEND_3,
     scene,
     cameraPos: [0, 1.5, 7.2],
     duration,
