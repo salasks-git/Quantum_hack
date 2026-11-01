@@ -1,38 +1,70 @@
 // Plain-language legend entries per scene (shown in the Legend panel).
 // Shape: { symbol, text, swatch? } where swatch is a CSS colour for colour keys.
-export const LEGEND_1 = [
+// Scenes 1-3 depend on the number of qubits n (2, 3 or 4); LEGEND_k = legendk(3) is the shipped tour.
+
+const SUB = ["₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈"];
+export function legend1(n = 3) {
+  const xs = Array.from({ length: n }, (_, k) => `x${SUB[k]}`).join(", ");
+  return [
   { symbol: "raw", text: "The patient's real measurements in their original units (years, mmHg, mg/dL…). Very different scales." },
   { symbol: "σ (sigma)", text: "Standard deviation: how far a value is from the average training patient. 0σ = typical, +1σ = one \"typical spread\" above average, −2σ = well below average. Values beyond ±2σ are unusual." },
   { symbol: "standardise", text: "Rescale every measurement to σ units so no measurement dominates just because of its units." },
-  { symbol: "PCA", text: "Principal Component Analysis: squeezes all measurements into 3 summary scores that keep most of the variation between patients." },
-  { symbol: "x₁, x₂, x₃", text: "The 3 summary scores turned into rotation angles in radians, between 0 and π (≈3.14)." },
+  { symbol: "PCA", text: `Principal Component Analysis: squeezes all measurements into ${n} summary scores that keep most of the variation between patients.` },
+  { symbol: xs, text: `The ${n} summary scores turned into rotation angles in radians, between 0 and π (≈3.14).` },
   { symbol: "qubit", text: "A quantum bit. It can point anywhere on a sphere, not just 0 or 1." },
   { symbol: "Bloch sphere", text: "The sphere that shows a single qubit's state; the arrow is the state." },
   { symbol: "|0⟩", text: "The starting state of every qubit (arrow pointing straight up, north pole)." },
   { symbol: "H (Hadamard)", text: "A quantum gate that tips the arrow from |0⟩ down to the equator." },
   { symbol: "phase 2x", text: "A rotation around the equator by twice the patient's angle: this is how the data is written into the qubit." },
   { symbol: "first layer only", text: "The feature map repeats and entangles the qubits; entangled qubits can't be drawn as separate arrows, so only the first layer is shown." },
-];
+  ];
+}
+export const LEGEND_1 = legend1(3);
 
-export const LEGEND_2 = [
-  { symbol: "healthy", swatch: "#4ade80", text: "A training patient whose true diagnosis is healthy." },
-  { symbol: "sick", swatch: "#fb7185", text: "A training patient whose true diagnosis is disease." },
-  { symbol: "your patient", swatch: "#ffffff", text: "The chosen test patient (never seen in training)." },
-  { symbol: "axes x₁, x₂, x₃", text: "Each patient's 3 angles from scene 1, used as a position in 3D." },
-  { symbol: "Linear SVM", text: "Separates sick from healthy with one flat sheet (a plane)." },
-  { symbol: "RBF SVM", text: "Separates them with a curved surface that can wrap around clusters." },
-  { symbol: "decision boundary (0)", text: "Where the model's score is exactly 0; one side is predicted disease, the other healthy." },
-  { symbol: "arrow", text: "Points to the side the model calls \"disease\"." },
-  { symbol: "prob", text: "The model's confidence that the patient has the disease (0–100%)." },
-];
+export function legend2(n = 3) {
+  const axes = n === 2
+    ? { symbol: "axes x₁, x₂", text: "Each patient's 2 angles from scene 1, used as a position on a flat plane (2 qubits → 2D)." }
+    : n === 3
+      ? { symbol: "axes x₁, x₂, x₃", text: "Each patient's 3 angles from scene 1, used as a position in 3D." }
+      : { symbol: "axes x₁, x₂, x₃", text: `The first 3 of each patient's ${n} angles from scene 1, used as a position in 3D. The other angle${n > 4 ? "s" : ""} can't be drawn.` };
+  const slice = n > 3
+    ? [{ symbol: "3D slice", text: `With ${n} qubits the boundaries live in ${n}D. The surfaces shown are the 3D slice where x₄ is fixed at the training patients' average; patients are drawn by x₁–x₃ only.` }]
+    : [];
+  return [
+    { symbol: "healthy", swatch: "#4ade80", text: "A training patient whose true diagnosis is healthy." },
+    { symbol: "sick", swatch: "#fb7185", text: "A training patient whose true diagnosis is disease." },
+    { symbol: "your patient", swatch: "#ffffff", text: "The chosen test patient (never seen in training)." },
+    axes,
+    ...slice,
+    n === 2
+      ? { symbol: "Linear SVM", text: "Separates sick from healthy with one straight line." }
+      : { symbol: "Linear SVM", text: "Separates sick from healthy with one flat sheet (a plane)." },
+    n === 2
+      ? { symbol: "RBF SVM", text: "Separates them with a curved line (a contour) that can wrap around clusters." }
+      : { symbol: "RBF SVM", text: "Separates them with a curved surface that can wrap around clusters." },
+    { symbol: "decision boundary (0)", text: "Where the model's score is exactly 0; one side is predicted disease, the other healthy." },
+    { symbol: "arrow", text: "Points to the side the model calls \"disease\"." },
+    { symbol: "prob", text: "The model's confidence that the patient has the disease (0–100%)." },
+  ];
+}
+export const LEGEND_2 = legend2(3);
 
-export const LEGEND_3 = [
-  { symbol: "|ψ⟩ (psi)", text: "The quantum state a patient is encoded into (all 3 qubits together)." },
-  { symbol: "K = |⟨ψa|ψb⟩|²", text: "Quantum similarity (kernel) between two patients: 1 = identical states, 0 = completely different." },
-  { symbol: "QSVC", text: "Quantum-kernel Support Vector Classifier: an SVM that uses K as its similarity measure." },
-  { symbol: "threads", text: "Lines between patients; brighter = higher K (more alike to the quantum computer)." },
-  { symbol: "most similar patient", text: "The training patient with the highest K to your patient." },
-];
+export function legend3(n = 3) {
+  const pos = n === 3
+    ? []
+    : [{ symbol: "positions", text: n === 2
+      ? "With 2 qubits each patient is placed by its 2 angles on a flat plane. K is unaffected."
+      : `Patients are placed by their first 3 angles; ${n === 4 ? "x₄ isn't" : "the others aren't"} drawn. K always uses all ${n} qubits.` }];
+  return [
+    { symbol: "|ψ⟩ (psi)", text: `The quantum state a patient is encoded into (all ${n} qubits together).` },
+    { symbol: "K = |⟨ψa|ψb⟩|²", text: "Quantum similarity (kernel) between two patients: 1 = identical states, 0 = completely different." },
+    { symbol: "QSVC", text: "Quantum-kernel Support Vector Classifier: an SVM that uses K as its similarity measure." },
+    { symbol: "threads", text: "Lines between patients; brighter = higher K (more alike to the quantum computer)." },
+    ...pos,
+    { symbol: "most similar patient", text: "The training patient with the highest K to your patient." },
+  ];
+}
+export const LEGEND_3 = legend3(3);
 
 export const LEGEND_4 = [
   { symbol: "VQC", text: "Variational Quantum Classifier: a quantum circuit with adjustable settings, trained like a neural network." },
