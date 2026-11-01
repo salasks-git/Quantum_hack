@@ -35,7 +35,7 @@ st.title("🧬 Q-Med: Multi-Domain Hybrid Quantum Disease Classifier")
 st.markdown(
     "**Qiskit Fall Fest 2026 · Quantum Hack Day Kochi | Challenge 02: Healthcare QML**  \n"
     "Benchmarking Quantum Kernel Support Vector Machines (`QSVC`) and Variational Quantum Classifiers (`VQC`) "
-    "against classical baselines across Oncology, Neurology, Cardiology, and Endocrinology datasets."
+    "against classical baselines across Oncology, Neurology, Cardiology, Endocrinology, and Orthopedics datasets."
 )
 
 # --- SIDEBAR CONFIGURATION ---
@@ -46,6 +46,7 @@ DATASET_MAP = {
     "Statlog Heart Disease (Cardiology)": "data/heart_disease_statlog.csv",
     "Wisconsin Breast Cancer (Oncology)": "data/breast_cancer_wisconsin.csv",
     "Pima Indians Diabetes (Endocrinology)": "data/diabetes_pima.csv",
+    "Vertebral Column (Orthopedics)": "data/vertebral_column.csv",
 }
 
 selected_dataset_label = st.sidebar.selectbox("1. Select Clinical Dataset", list(DATASET_MAP.keys()))

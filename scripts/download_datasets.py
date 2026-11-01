@@ -40,7 +40,22 @@ def download_all():
     df_diab.to_csv(os.path.join(DATA_DIR, "diabetes_pima.csv"), index=False)
     print(f"✅ Saved data/diabetes_pima.csv ({df_diab.shape[0]} rows, {df_diab.shape[1]-1} features)")
 
-    print("🎉 All 4 datasets downloaded, cleaned, and ready for offline QML training!")
+    # 5. Vertebral Column 2C (Orthopedics - 310 rows, 6 biomechanical features)
+    # OpenML 1524 = UCI "column_2C": class '1' = Abnormal (disc hernia / spondylolisthesis), '2' = Normal
+    try:
+        vert = fetch_openml(data_id=1524, as_frame=True, parser="auto")
+    except Exception:
+        vert = fetch_openml(data_id=1524, as_frame=True, parser="liac-arff")
+    df_vert = vert.data.astype(float).copy()
+    df_vert.columns = [
+        "pelvic_incidence", "pelvic_tilt", "lumbar_lordosis_angle",
+        "sacral_slope", "pelvic_radius", "degree_spondylolisthesis",
+    ]
+    df_vert["target"] = (vert.target.astype(str) == "1").astype(int).to_numpy()
+    df_vert.to_csv(os.path.join(DATA_DIR, "vertebral_column.csv"), index=False)
+    print(f"✅ Saved data/vertebral_column.csv ({df_vert.shape[0]} rows, {df_vert.shape[1]-1} features)")
+
+    print("🎉 All 5 datasets downloaded, cleaned, and ready for offline QML training!")
 
 if __name__ == "__main__":
     download_all()
