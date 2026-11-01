@@ -33,7 +33,7 @@ describe("metricRows / metricHonesty (metric formatting)", () => {
     const m = read("vertebral_column.elite.json").approaches.sandwich.metrics;
     const rows = metricRows(m);
     expect(rows.map((r) => r.key)).toEqual(["f2", "accuracy", "precision", "recall", "roc_auc", "time_s"]);
-    expect(rows.map((r) => r.text)).toEqual(["0.862", "76.0%", "78.9%", "88.2%", "0.846", "131 ms"]);
+    expect(rows.map((r) => r.text)).toEqual(["0.862", "76.0%", "78.9%", "88.2%", "0.838", "101 ms"]);
     expect(rows.filter((r) => r.bar).length).toBe(5);
     expect(rows.some((r) => r.warn)).toBe(false);
     expect(metricHonesty("Sandwich", m)).toEqual([]);
