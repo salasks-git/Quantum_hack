@@ -58,8 +58,8 @@ describe("renderMetrics", () => {
     renderMetrics(c, d.test);
     expect(c.querySelectorAll(".ap-metrics tbody tr").length).toBe(5);
     expect(c.querySelectorAll(".ap-cm").length).toBe(5);
-    expect(c.querySelector(".ap-metrics tbody tr:last-child").textContent).toContain("92%");
-    expect(c.querySelector(".ap-metrics tbody tr:last-child").textContent).toContain("0.849");
+    expect(c.querySelector(".ap-metrics tbody tr:last-child").textContent).toContain("84%");
+    expect(c.querySelector(".ap-metrics tbody tr:last-child").textContent).toContain("0.818");
   });
   it("shows an em dash for a null AUC", () => {
     const c = document.createElement("div");

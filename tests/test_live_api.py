@@ -24,6 +24,7 @@ qs = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(qs)
 
 import live_api as la  # noqa: E402
+from qmed.config import DEFAULT_BANDWIDTH  # noqa: E402
 
 SECRET = "SECRET-TOKEN-456"
 SLUG = "vertebral_column"
@@ -137,8 +138,9 @@ def test_settings_defaults_and_bandwidth_options():
     for b in BANDWIDTH_OPTIONS:
         assert la.validate_settings({"slug": SLUG, "kernel_bandwidth": b})[1]["kernel_bandwidth"] == b
     assert la.validate_settings({"slug": SLUG, "kernel_bandwidth": 1})[1]["kernel_bandwidth"] == 1.0
-    assert la.STATIC_SETTINGS["kernel_bandwidth"] == 1.0  # shipped JSON = train_all_models' default
-    assert la.default_run_id(SLUG) == la.make_run_id(SLUG, {**st, "kernel_bandwidth": 1.0})
+    assert la.STATIC_SETTINGS["kernel_bandwidth"] == DEFAULT_BANDWIDTH  # shipped JSON = Streamlit default
+    assert la.DEFAULTS["kernel_bandwidth"] == la.STATIC_SETTINGS["kernel_bandwidth"]
+    assert la.default_run_id(SLUG) == la.make_run_id(SLUG, {**st, "kernel_bandwidth": DEFAULT_BANDWIDTH})
 
 
 def test_run_id_stable_and_distinct():
@@ -332,7 +334,7 @@ def test_default_settings_lazy_predict_reproduces_static_export(srv, small_run):
     assert s["state"] == "done"
     code, js = srv.call("GET", f"/api/live/run/{rid}.json")
     assert code == 200 and js["custom_run"] is True
-    assert js["settings"]["max_samples"] == 100 and js["settings"]["kernel_bandwidth"] == 1.0
+    assert js["settings"]["max_samples"] == 100 and js["settings"]["kernel_bandwidth"] == DEFAULT_BANDWIDTH
 
     fresh = etd.export_dataset("Vertebral Column (Orthopedics)", DATASETS["Vertebral Column (Orthopedics)"],
                                grid_size=6)
@@ -348,8 +350,7 @@ def test_default_settings_lazy_predict_reproduces_static_export(srv, small_run):
                 assert a["models"][m]["pred"] == b["models"][m]["pred"]
         for key in ("train", "qsvc", "vqc", "linear", "qpu", "feature_ranges"):
             assert js[key] == ref[key], key
-    assert {k: v for k, v in js["settings"].items() if k not in ("max_samples", "kernel_bandwidth")} \
-        == fresh["settings"]
+    assert {k: v for k, v in js["settings"].items() if k != "max_samples"} == fresh["settings"]
 
     bundle = la.RUNS[rid]["bundle"]
     for i in range(len(fresh["test"])):

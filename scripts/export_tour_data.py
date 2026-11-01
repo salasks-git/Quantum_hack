@@ -25,7 +25,7 @@ from sklearn.svm import SVC  # noqa: E402
 
 from qmed.circuits import build_ansatz, build_feature_map  # noqa: E402
 from qmed.config import (  # noqa: E402
-    DATASETS, FEATURE_MAP_ZZ, HYBRID_ENSEMBLE, LINEAR_SVM, QSVC_MODEL, RANDOM_STATE, RBF_SVM, TEST_SIZE,
+    DATASETS, DEFAULT_BANDWIDTH, FEATURE_MAP_ZZ, HYBRID_ENSEMBLE, LINEAR_SVM, QSVC_MODEL, RANDOM_STATE, RBF_SVM, TEST_SIZE,
     VQC_MODEL,
 )
 from qmed.data import PreparedData, load_dataset, prepare_data  # noqa: E402
@@ -33,8 +33,8 @@ from qmed.hardware import qpu_profile  # noqa: E402
 from qmed.models import COBYLA, HybridEnsembleModel, build_quantum_kernel, fit_and_evaluate  # noqa: E402
 
 N_QUBITS, REPS, ENTANGLEMENT, VQC_ITER, MAX_SAMPLES = 3, 2, "linear", 35, 100
-# The shipped tour JSON uses qmed.models.train_all_models' default bandwidth (unscaled map).
-KERNEL_BANDWIDTH = 1.0
+# Streamlit parity: the tour uses the Streamlit sidebar's default kernel bandwidth.
+KERNEL_BANDWIDTH = float(DEFAULT_BANDWIDTH)
 GRID_MIN, GRID_MAX = -0.3, float(np.pi + 0.3)
 MODEL_KEYS = {"linear": LINEAR_SVM, "rbf": RBF_SVM, "qsvc": QSVC_MODEL, "vqc": VQC_MODEL}
 
@@ -208,8 +208,7 @@ def bundle_to_json(bundle: Bundle, grid_size: int = 24) -> dict:
 
     settings = {"n_qubits": n_qubits, "feature_map": s["feature_map"], "reps": s["reps"],
                 "entanglement": s["entanglement"], "vqc_iter": vqc_iter, "seed": s["seed"]}
-    if s.get("kernel_bandwidth", 1.0) != 1.0:  # absent = 1.0, keeps default output byte-identical
-        settings["kernel_bandwidth"] = s["kernel_bandwidth"]
+    settings["kernel_bandwidth"] = float(s.get("kernel_bandwidth", KERNEL_BANDWIDTH))
     lin = res[LINEAR_SVM]["model"]
     full = data.df.drop(columns=["target"]).values
     return {

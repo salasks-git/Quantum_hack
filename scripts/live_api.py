@@ -33,12 +33,12 @@ from qmed.config import (  # noqa: E402
 
 SLUGS = {Path(p).stem: label for label, p in DATASETS.items()}
 CSV = {Path(p).stem: Path(p) for p in DATASETS.values()}
-# Settings of the shipped web/public/data/<slug>.json (export_tour_data defaults).
+# Settings of the shipped web/public/data/<slug>.json (export_tour_data defaults; bandwidth = DEFAULT_BANDWIDTH).
 STATIC_SETTINGS = {"max_samples": etd.MAX_SAMPLES, "n_qubits": etd.N_QUBITS, "feature_map": etd.FEATURE_MAP_ZZ,
                    "reps": etd.REPS, "entanglement": etd.ENTANGLEMENT, "vqc_iter": etd.VQC_ITER,
                    "kernel_bandwidth": float(etd.KERNEL_BANDWIDTH)}
 # Values used for fields missing from POST /api/live/train (Streamlit sidebar defaults; the
-# sidebar's bandwidth default differs from the static files' 1.0, so clients should send it).
+# bandwidth is the same DEFAULT_BANDWIDTH as the static files).
 DEFAULTS = {**STATIC_SETTINGS, "kernel_bandwidth": float(DEFAULT_BANDWIDTH)}
 # Exactly the Streamlit sidebar ranges.
 RANGES = {

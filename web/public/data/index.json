@@ -28,5 +28,10 @@
     "slug": "acute_inflammations",
     "label": "Acute Inflammations (Nephrology / Urology)",
     "n_features": 6
+  },
+  {
+    "slug": "maternal_health_risk",
+    "label": "Maternal Health Risk (Obstetrics / Gynecology)",
+    "n_features": 6
   }
 ]

@@ -51,9 +51,9 @@ describe("modelMetrics", () => {
 const SK = {
   linear: { f2: 0.818182, recall: 0.818182, missed: 2, f1: 0.818182, precision: 0.818182, accuracy: 0.84, rocAuc: 0.941558, cm: { tp: 9, fp: 2, fn: 2, tn: 12 } },
   rbf: { f2: 0.833333, recall: 0.818182, missed: 2, f1: 0.857143, precision: 0.9, accuracy: 0.88, rocAuc: 0.954545, cm: { tp: 9, fp: 1, fn: 2, tn: 13 } },
-  qsvc: { f2: 0.462963, recall: 0.454545, missed: 6, f1: 0.47619, precision: 0.5, accuracy: 0.56, rocAuc: 0.600649, cm: { tp: 5, fp: 5, fn: 6, tn: 9 } },
+  qsvc: { f2: 0.833333, recall: 0.818182, missed: 2, f1: 0.857143, precision: 0.9, accuracy: 0.88, rocAuc: 0.935065, cm: { tp: 9, fp: 1, fn: 2, tn: 13 } },
   vqc: { f2: 0.283019, recall: 0.272727, missed: 8, f1: 0.3, precision: 0.333333, accuracy: 0.44, rocAuc: 0.422078, cm: { tp: 3, fp: 6, fn: 8, tn: 8 } },
-  hybrid: { f2: 0.849057, recall: 0.818182, missed: 2, f1: 0.9, precision: 1.0, accuracy: 0.92, rocAuc: 0.954545, cm: { tp: 9, fp: 0, fn: 2, tn: 14 } },
+  hybrid: { f2: 0.818182, recall: 0.818182, missed: 2, f1: 0.818182, precision: 0.818182, accuracy: 0.84, rocAuc: 0.961039, cm: { tp: 9, fp: 2, fn: 2, tn: 12 } },
 };
 describe("sklearn cross-check (heart_disease_statlog)", () => {
   const d = JSON.parse(readFileSync("public/data/heart_disease_statlog.json", "utf8"));
