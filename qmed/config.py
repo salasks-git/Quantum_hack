@@ -43,6 +43,7 @@ DATASETS = {
     "Pima Indians Diabetes (Endocrinology)": DATA_DIR / "diabetes_pima.csv",
     "Vertebral Column (Orthopedics)": DATA_DIR / "vertebral_column.csv",
     "Acute Inflammations (Nephrology / Urology)": DATA_DIR / "acute_inflammations.csv",
+    "Maternal Health Risk (Obstetrics / Gynecology)": DATA_DIR / "maternal_health_risk.csv",
 }
 
 

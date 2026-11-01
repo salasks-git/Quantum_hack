@@ -102,7 +102,41 @@ def download_all():
     df_inflam.to_csv(os.path.join(DATA_DIR, "acute_inflammations.csv"), index=False)
     print(f"✅ Saved data/acute_inflammations.csv ({df_inflam.shape[0]} rows, {df_inflam.shape[1]-1} features)")
 
-    print("🎉 All 6 datasets downloaded, cleaned, and ready for offline QML training!")
+    # 7. Maternal Health Risk (Obstetrics / Gynecology - 1014 rows, 6 features)
+    # UCI ID 863: IoT-based maternal risk monitoring in rural communities
+    # Target: 1 = High Risk (severe complications requiring urgent clinical intervention), 0 = Low / Mid Risk
+    try:
+        import io
+        import urllib.request
+        import zipfile
+        url_mat = "https://archive.ics.uci.edu/static/public/863/maternal+health+risk.zip"
+        req_mat = urllib.request.Request(url_mat, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req_mat) as resp:
+            z_mat = zipfile.ZipFile(io.BytesIO(resp.read()))
+            raw_mat = z_mat.read("Maternal Health Risk Data Set.csv")
+            df_mat_raw = pd.read_csv(io.BytesIO(raw_mat))
+
+        col_map = {
+            "Age": "age",
+            "SystolicBP": "systolic_bp",
+            "DiastolicBP": "diastolic_bp",
+            "BS": "blood_sugar",
+            "BodyTemp": "body_temp",
+            "HeartRate": "heart_rate",
+        }
+        df_mat = df_mat_raw.rename(columns=col_map).copy()
+        df_mat["target"] = (
+            df_mat_raw["RiskLevel"].astype(str).str.lower().str.strip() == "high risk"
+        ).astype(int)
+        df_mat = df_mat[
+            ["age", "systolic_bp", "diastolic_bp", "blood_sugar", "body_temp", "heart_rate", "target"]
+        ]
+        df_mat.to_csv(os.path.join(DATA_DIR, "maternal_health_risk.csv"), index=False)
+        print(f"✅ Saved data/maternal_health_risk.csv ({df_mat.shape[0]} rows, {df_mat.shape[1]-1} features)")
+    except Exception as e:
+        print(f"⚠️ Failed to download maternal health risk dataset: {e}")
+
+    print("🎉 All 7 datasets downloaded, cleaned, and ready for offline QML training!")
 
 if __name__ == "__main__":
     download_all()
