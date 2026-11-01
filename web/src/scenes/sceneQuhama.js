@@ -6,12 +6,17 @@ import {
 } from "./common.js";
 import { loadQuhama } from "../data.js";
 import { quhamaPatient, pickInputs, pct1 } from "../quhama.js";
+import { loadElite, eliteCheck } from "../elite.js";
+import { buildElitePart, E_STOPS, E_DURATION } from "./eliteParts.js";
 
 // QuHaMA (mirrors qmed/ui/tab_quhama.py): the chosen test patient flows through
 // inputs -> encoder -> latent z -> {classical head, quantum branch} -> gating network -> blended verdict,
 // then the model's test metrics. Every number comes from <slug>.quhama.json (and the patient's
 // standardized inputs from <slug>.json). The JSON is fetched lazily; the timeline below starts once it
 // has loaded (stops / duration are shifted by that moment).
+// Part 2 (Streamlit Tab 8 parity, eliteParts.js): "Elite Hybrid Architectures" — Sandwich HQNN / Q-CKTA cards,
+// the leaderboard on F2 and this patient's elite verdicts, from <slug>.elite.json. It follows the QuHaMA part;
+// each part loads and fails independently (an error shows a 4 s inline message, then the tour moves on).
 
 // Timeline (seconds after the data has loaded)
 const T = {
@@ -142,23 +147,35 @@ export default function createScene(ctx) {
   root.position.set(2.2, 1.0, 0); // right of the legend panel, above the caption
   scene.add(root);
 
-  let status = "loading"; // loading | ready | error
+  let status = "loading"; // loading | ready | error (QuHaMA part)
   let errMsg = "";
   let q = null, info = null, built = null;
+  let eStatus = "loading", eErr = "", elite = null, eBuilt = null, qDone = false; // elite part
   let t0 = null; // scene time at which the data had loaded and the timeline started
   let lastT = 0; // last scene time rendered while loading (frames can be sparse, e.g. headless)
   let disposed = false;
+  const ERR_LEN = 4; // seconds an inline error message is shown before the next part
+  const custom = !!data.test[ctx.patient] && data.test[ctx.patient].label == null; // custom (slider) patient
 
-  loadQuhama(data.slug).then(
-    (json) => {
-      if (disposed) return;
-      const r = quhamaPatient(json, data, ctx.patient);
-      if (!r.ok) { status = "error"; errMsg = r.msg; return; }
-      q = json; info = r; status = "ready";
-      t0 = lastT;
-    },
-    (e) => { if (!disposed) { status = "error"; errMsg = e.message; } }
-  );
+  Promise.allSettled([loadQuhama(data.slug), loadElite(data.slug)]).then(([rq, re]) => {
+    if (disposed) return;
+    if (rq.status === "rejected") { status = "error"; errMsg = rq.reason.message; }
+    else if (custom) { status = "error"; errMsg = "QuHaMA needs a precomputed test patient; a custom patient has no exported QuHaMA breakdown"; }
+    else {
+      const r = quhamaPatient(rq.value, data, ctx.patient);
+      if (!r.ok) { status = "error"; errMsg = r.msg; }
+      else { q = rq.value; info = r; status = "ready"; }
+    }
+    if (re.status === "rejected") { eStatus = "error"; eErr = re.reason.message; }
+    else {
+      const c = eliteCheck(re.value, data);
+      if (!c.ok) { eStatus = "error"; eErr = c.msg; }
+      else { elite = re.value; eStatus = "ready"; }
+    }
+    t0 = lastT;
+  });
+  const qLen = () => (status === "ready" ? DURATION : ERR_LEN);
+  const eLen = () => (eStatus === "ready" ? E_DURATION : ERR_LEN);
 
   function build() {
     const row = info.row;
@@ -469,28 +486,41 @@ export default function createScene(ctx) {
   }
 
   return {
-    title: "QuHaMA: hybrid classical + quantum network",
+    title: "QuHaMA & Elite Hybrid Architectures",
     legend: LEGEND_QUHAMA,
     scene,
     cameraPos: [0, 0.9, 11.6],
     // Timeline starts when the data has loaded: stops/duration are shifted by that moment.
     get duration() {
-      if (status === "error") return 4;
-      return t0 === null ? Infinity : t0 + DURATION;
+      return t0 === null ? Infinity : t0 + qLen() + eLen();
     },
-    get stops() { return t0 === null ? [] : STOPS.map((s) => s + t0); },
+    get stops() {
+      if (t0 === null) return [];
+      const qs = status === "ready" ? STOPS : [];
+      const es = eStatus === "ready" ? E_STOPS.map((s) => s + qLen()) : [];
+      return [...qs, ...es].map((s) => s + t0);
+    },
     update(t) {
-      if (status === "loading") {
+      if (t0 === null) {
         lastT = t;
         return `<div style="font-size:14px"><b>QuHaMA</b> · loading the hybrid model's data…</div>`;
       }
-      if (status === "error") {
-        return `<div style="font-size:14px"><b>QuHaMA</b> · <span style="color:#fb7185">${errMsg}${/[.!?]$/.test(errMsg) ? "" : "."}</span> Other steps still work.</div>`;
-      }
-      if (!built) built = build();
       const rt = t - t0;
-      built(rt);
-      return caption(rt);
+      const errLine = (name, msg) => `<div style="font-size:14px"><b>${name}</b> · <span style="color:#fb7185">${msg}${/[.!?]$/.test(msg) ? "" : "."}</span> Other steps still work.</div>`;
+      if (rt < qLen()) {
+        if (status === "error") return errLine("QuHaMA", errMsg);
+        if (!built) built = build();
+        built(rt);
+        return caption(rt);
+      }
+      // ---- part 2: Elite Hybrid Architectures (the QuHaMA network fades out) ----
+      const et = rt - qLen();
+      if (!qDone) { if (built) built(DURATION); qDone = true; }
+      setOpacity(root, 1 - ease(seg(et, 0, 0.8)));
+      if (eStatus === "error") return errLine("Elite Hybrid Architectures", eErr);
+      if (!eBuilt) eBuilt = buildElitePart(scene, { elite, data, patient: ctx.patient, quhamaMetrics: q && q.metrics });
+      eBuilt.animate(et);
+      return eBuilt.caption(et);
     },
     dispose() {
       disposed = true;
