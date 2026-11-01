@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderLegend, mountLegendToggle } from "./legend.js";
-import { LEGEND_1, LEGEND_2, LEGEND_3, LEGEND_4, LEGEND_5 } from "./scenes/legends.js";
+import { LEGEND_1, LEGEND_2, LEGEND_3, LEGEND_4, LEGEND_5, LEGEND_BANDWIDTH } from "./scenes/legends.js";
 
 const fakeEl = () => ({ innerHTML: "", hidden: false, _l: {}, classList: { toggle() {} }, setAttribute() {}, addEventListener(n, f) { this._l[n] = f; } });
 
@@ -25,8 +25,8 @@ describe("renderLegend", () => {
   });
 });
 
-describe("scene legends (scenes 1-5)", () => {
-  it.each([[LEGEND_1], [LEGEND_2], [LEGEND_3], [LEGEND_4], [LEGEND_5]])("is non-empty with string symbol/text", (L) => {
+describe("scene legends (scenes 1-5 + Kernel Bandwidth Lab)", () => {
+  it.each([[LEGEND_1], [LEGEND_2], [LEGEND_3], [LEGEND_4], [LEGEND_5], [LEGEND_BANDWIDTH]])("is non-empty with string symbol/text", (L) => {
     expect(L.length).toBeGreaterThan(0);
     for (const it of L) { expect(typeof it.symbol).toBe("string"); expect(typeof it.text).toBe("string"); }
   });

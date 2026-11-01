@@ -20,9 +20,14 @@ shot() { # url outfile
   [ -f "$2" ] || { echo "no screenshot $2"; return 1; }
 }
 
+# Step count = length of STEP_FACTORIES in src/main.js (override with STEPS=n).
+STEPS="${STEPS:-$(node -e 'const s=require("fs").readFileSync("src/main.js","utf8");const m=s.match(/STEP_FACTORIES\s*=\s*\[([^\]]*)\]/);if(!m)process.exit(1);console.log(m[1].split(",").filter((x)=>x.trim()).length)')}"
+[ -n "$STEPS" ] && [ "$STEPS" -ge 1 ] 2>/dev/null || { echo "could not derive step count from src/main.js"; exit 1; }
+echo "steps: $STEPS"
+
 FAIL=0
 for slug in $(node -e 'for(const d of require("./public/data/index.json"))console.log(d.slug)'); do
-  for step in 1 2 3 4 5; do
+  for step in $(seq 1 "$STEPS"); do
     shot "http://localhost:$PORT/?disease=$slug&step=$step" "out/$slug-$step.png" || { echo "FAIL $slug step $step"; FAIL=1; }
   done
 done

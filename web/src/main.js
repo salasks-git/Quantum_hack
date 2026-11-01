@@ -11,8 +11,13 @@ import scene2 from "./scenes/scene2.js";
 import scene3 from "./scenes/scene3.js";
 import scene4 from "./scenes/scene4.js";
 import scene5 from "./scenes/scene5.js";
+import sceneBandwidth from "./scenes/sceneBandwidth.js";
 
-const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5];
+// Step table: step n (1-based) = STEP_FACTORIES[n - 1]. Append new scenes here; the step count,
+// the step dots, Prev/Next bounds, the URL ?step= range and web/scripts/smoke.sh all derive from it.
+const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5, sceneBandwidth];
+const N_STEPS = STEP_FACTORIES.length;
+const clampStep = (n) => Math.min(N_STEPS, Math.max(1, n));
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -107,7 +112,7 @@ const allPatients = mountAllPatients($("all-btn"), $("allpatients"), {
 // --- end All patients overlay ---
 
 function gotoStep(n) {
-  state.step = Math.min(5, Math.max(1, n));
+  state.step = clampStep(n);
   rebuild();
 }
 
@@ -116,7 +121,16 @@ $("patient").addEventListener("change", (e) => { state.patient = +e.target.value
 $("prev").addEventListener("click", () => gotoStep(state.step - 1));
 $("next").addEventListener("click", () => gotoStep(state.step + 1));
 $("replay").addEventListener("click", rebuild);
-document.querySelectorAll(".dot").forEach((d) => d.addEventListener("click", () => gotoStep(+d.dataset.step)));
+// one dot per step in the table
+$("dots").innerHTML = "";
+for (let n = 1; n <= N_STEPS; n++) {
+  const d = document.createElement("button");
+  d.className = "dot";
+  d.dataset.step = n;
+  d.textContent = n;
+  d.addEventListener("click", () => gotoStep(n));
+  $("dots").appendChild(d);
+}
 $("playall").addEventListener("click", () => {
   state.playAll = !state.playAll;
   $("playall").classList.toggle("on", state.playAll);
@@ -158,19 +172,19 @@ function updateBadge() {
 
 function loop() {
   requestAnimationFrame(loop);
-  if (pauseAt >= 0 && !manager.paused && manager.elapsed >= pauseAt) { manager.setPaused(true); syncPause(); }
+  if (pauseAt >= 0 && !manager.paused && manager.elapsed >= pauseAt) { manager.elapsed = pauseAt; manager.setPaused(true); syncPause(); } // snap: slow (software-GL) frames can overshoot
   const caption = manager.tick();
   if ($("caption").innerHTML !== caption) $("caption").innerHTML = caption;
   updateBadge();
   if (state.playAll && !state.advanced && manager.elapsed > manager.duration) {
-    if (state.step < 5) { state.advanced = true; gotoStep(state.step + 1); }
+    if (state.step < N_STEPS) { state.advanced = true; gotoStep(state.step + 1); }
     else { state.playAll = false; $("playall").classList.remove("on"); }
   }
 }
 
 async function init() {
   resize();
-  state.step = Math.min(5, Math.max(1, parseInt(params.get("step")) || 1));
+  state.step = clampStep(parseInt(params.get("step")) || 1);
   state.patient = Math.max(0, parseInt(params.get("patient")) || 0);
   try {
     state.index = await loadIndex();

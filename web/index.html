@@ -12,9 +12,7 @@
   <label>Patient <select id="patient"></select></label>
   <nav id="steps">
     <button id="prev" title="Previous step">Prev</button>
-    <span id="dots">
-      <button class="dot" data-step="1">1</button><button class="dot" data-step="2">2</button><button class="dot" data-step="3">3</button><button class="dot" data-step="4">4</button><button class="dot" data-step="5">5</button>
-    </span>
+    <span id="dots"><!-- one .dot per step, built by main.js from STEP_FACTORIES --></span>
     <button id="next" title="Next step">Next</button>
     <button id="replay">Replay</button>
     <button id="playall">Play all</button>
