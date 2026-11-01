@@ -70,4 +70,8 @@ export const LEGEND_6 = [
   { symbol: "fidelity (hardware)", text: "Fraction of shots that returned 000: the chip's measured similarity K." },
   { symbol: "fidelity (ideal)", text: "The same similarity computed perfectly on the simulator." },
   { symbol: "noise gap", text: "Ideal − hardware: how much real-chip noise changed the answer." },
+  { symbol: "train / inference", text: "Training = fitting the model on the 75 training patients; inference = predicting the 25 test patients. Bars: solid = train, light = inference." },
+  { symbol: "log scale", text: "Each axis step is 10× longer, so a millisecond and a minute fit on one chart." },
+  { symbol: "F2 score", text: "0–1 score that counts a missed sick patient twice as heavily as a false alarm. Higher is better." },
+  { symbol: "efficiency frontier", text: "Pareto-optimal models (gold line): no other model is both faster and has a higher F2." },
 ];
