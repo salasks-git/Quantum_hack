@@ -3,14 +3,13 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import "./style.css";
 import { loadIndex, loadDisease } from "./data.js";
 import { SceneManager } from "./sceneManager.js";
-import { makePlaceholder } from "./scenes/placeholder.js";
 import scene1 from "./scenes/scene1.js";
 import scene2 from "./scenes/scene2.js";
 import scene3 from "./scenes/scene3.js";
+import scene4 from "./scenes/scene4.js";
 import scene5 from "./scenes/scene5.js";
 
-// Replace entries with real scene factories as they are built.
-const STEP_FACTORIES = [scene1, scene2, scene3, makePlaceholder(4), scene5];
+const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5];
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
