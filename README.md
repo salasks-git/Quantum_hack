@@ -12,12 +12,13 @@
 
 ## 📌 Executive Summary
 
-**Q-Med** is a reproducible, multi-domain hybrid quantum-classical diagnostic platform built on **Qiskit 1.x** and **Streamlit**. It delivers an empirical, head-to-head benchmark comparing state-of-the-art Quantum Machine Learning algorithms against standard classical models across four clinical disease domains:
+**Q-Med** is a reproducible, multi-domain hybrid quantum-classical diagnostic platform built on **Qiskit 1.x** and **Streamlit**. It delivers an empirical, head-to-head benchmark comparing state-of-the-art Quantum Machine Learning algorithms against standard classical models across five clinical disease domains:
 
 - **Oncology:** Wisconsin Breast Cancer Diagnosis (Malignant vs. Benign)
 - **Neurology:** Parkinson's Disease Vocal Biomarker Detection
 - **Cardiology:** Statlog Heart Disease Prediction
 - **Endocrinology:** Pima Indians Diabetes Screening
+- **Orthopedics:** Vertebral Column Abnormality Detection (Disc Hernia / Spondylolisthesis)
 
 The platform implements a complete 3-stage quantum preprocessing pipeline, parameterizable quantum circuits (Feature Maps & Variational Ansätze), fidelity-based quantum kernels, and a real-time clinical inference simulator.
 
@@ -63,12 +64,13 @@ All datasets are automatically cleaned, labeled into standardized binary targets
 | **Parkinson's Vocal** | Neurology | 195 | 22 | Biomedical voice frequency and amplitude jitter/shimmer (PD=1) |
 | **Statlog Heart Disease** | Cardiology | 270 | 13 | Resting ECG, blood pressure, thallium heart scan (Heart Disease=1) |
 | **Pima Indians Diabetes** | Endocrinology | 768 | 8 | Glucose, insulin, BMI, age (Tested Positive=1) |
+| **Vertebral Column** | Orthopedics | 310 | 6 | Pelvic incidence/tilt, lumbar lordosis, sacral slope, spondylolisthesis grade (Abnormal=1) |
 
 ---
 
 ## 🖥️ Streamlit Interactive UI Overview
 
-Launch the diagnostic dashboard (`streamlit run app.py`) to explore four specialized modules:
+Launch the diagnostic dashboard (`streamlit run app.py`) to explore five specialized modules:
 
 1. **📊 Tab 1 — Dataset & Quantum Preprocessing:**
    - Raw data inspection, class distribution metrics, and cumulative explained variance ratios.
@@ -79,14 +81,16 @@ Launch the diagnostic dashboard (`streamlit run app.py`) to explore four special
    - VQC training convergence loss trajectory across COBYLA optimization iterations.
 3. **🏆 Tab 3 — Apples-to-Apples Benchmarks:**
    - Rigorous comparison metrics: Test Accuracy, F1-Score (Disease), Precision, Sensitivity (Recall), ROC-AUC, and Execution Latency.
+   - ROC-AUC is computed from each model's class probabilities (`predict_proba`), including VQC, so ranking quality is compared fairly.
    - Side-by-side $2 \times 2$ confusion matrices across all 4 classical and quantum models on identical test partitions.
 4. **⏱️ Tab 4 — Execution Time & Quantum Latency Profiler:**
    - Granular wall-clock profiling tracking preprocessing, training, and test inference times.
    - Side-by-side comparative horizontal bar charts and stacked train vs. inference visualizations.
    - Per-patient latency (ms) and throughput (patients/sec) analysis with theoretical scaling complexity ($O(\cdot)$).
 5. **🩺 Tab 5 — Live Patient Diagnostic Simulator:**
-   - Real-time clinical inference slider module allowing practitioners to manipulate patient principal feature angles.
-   - Live side-by-side disease prediction and calibrated confidence metrics between **QSVC** and **Classical RBF SVM**.
+   - Real-time inference sliders, one per qubit. Each slider is a compressed PCA summary score mapped to a rotation angle — **not** a raw clinical value such as blood pressure or glucose.
+   - **Load patient** dropdown fills the sliders from a real held-out test patient and shows their true diagnosis.
+   - Live side-by-side disease prediction and confidence metrics between **QSVC** and **Classical RBF SVM**.
 
 ---
 
@@ -113,7 +117,7 @@ pip install -r requirements.txt
 ```bash
 python3 scripts/download_datasets.py
 ```
-*(Pre-downloads and verifies all 4 clinical datasets into `./data/` for full offline execution).*
+*(Pre-downloads and verifies all 5 clinical datasets into `./data/` for full offline execution. If a CSV is missing, the app silently falls back to the Breast Cancer dataset.)*
 
 ### 4. Launch the Web Application
 ```bash
@@ -129,18 +133,93 @@ Open your browser at `http://localhost:8501`.
 Quantum_hack/
 ├── AGENTS.md                  # Autonomous agent setup instructions & project context
 ├── README.md                  # Comprehensive project documentation
-├── app.py                     # Full-featured Streamlit hybrid QML dashboard
+├── app.py                     # Streamlit entry point: sidebar → data prep → training → tabs
 ├── requirements.txt           # Pinned dependencies (Qiskit 1.x, Torch, Scikit-Learn, Streamlit)
 ├── .gitignore                 # Excludes venvs, caches, checkpoints; tracks clean CSVs
+├── qmed/                      # Pipeline package (core modules have no Streamlit dependency)
+│   ├── config.py              # Dataset registry, UI option lists, model names, complexity labels
+│   ├── data.py                # CSV loading + standardize → PCA → [0, π] angle preprocessing
+│   ├── circuits.py            # Feature map (ZZ / Pauli) and RealAmplitudes ansatz builders
+│   ├── models.py              # Trains & times Linear SVM, RBF SVM, QSVC, VQC
+│   ├── metrics.py             # Benchmark and timing tables
+│   └── ui/                    # Streamlit UI
+│       ├── sidebar.py         # Settings panel → PipelineConfig
+│       ├── plots.py           # All matplotlib/seaborn figures
+│       ├── tab_dataset.py     # Tab 1
+│       ├── tab_circuits.py    # Tab 2
+│       ├── tab_benchmarks.py  # Tab 3
+│       ├── tab_profiler.py    # Tab 4
+│       └── tab_simulator.py   # Tab 5
 ├── data/                      # Cleaned clinical benchmark datasets
 │   ├── breast_cancer_wisconsin.csv
 │   ├── diabetes_pima.csv
 │   ├── heart_disease_statlog.csv
-│   └── parkinsons_vocal.csv
-├── scripts/                   # Automated data pipelines
-│   └── download_datasets.py   # Dataset ingestion and preprocessing script
-└── src/                       # Custom modular source components
+│   ├── parkinsons_vocal.csv
+│   └── vertebral_column.csv
+└── scripts/                   # Automated data pipelines
+    └── download_datasets.py   # Dataset ingestion and preprocessing script
 ```
+
+---
+
+## 🧩 Code Architecture
+
+### Data flow
+
+```text
+render_sidebar()              qmed/ui/sidebar.py   → PipelineConfig (all user settings)
+      │
+cached_prepare()              app.py → qmed/data.py
+      │   load CSV → stratified subsample → 75/25 split → standardize → PCA(n_qubits) → angles in [0, π]
+      ▼
+PreparedData                  X_train_q, X_test_q, y_train, y_test, pca, prep_time, ...
+      │
+cached_train()                app.py → qmed/circuits.py + qmed/models.py
+      │   builds circuits, then fits all 4 models via fit_and_evaluate()
+      ▼
+results                       {model name: {model, pred, prob, train_time, inf_time, total_time, ...}}
+      │                       QSVC adds kernel_matrix, VQC adds loss_history
+      ▼
+tab_*.render()                qmed/ui/tab_*.py → tables (qmed/metrics.py) + charts (qmed/ui/plots.py)
+```
+
+### Where to make common changes
+
+| Task | File |
+| :--- | :--- |
+| Add a dataset | Add a loader to `scripts/download_datasets.py`, then one line in `DATASETS` in `qmed/config.py` |
+| Add a model | Add one `fit_and_evaluate(...)` call in `qmed/models.py` plus its name in `qmed/config.py`. It appears in the benchmark and timing tables automatically. |
+| Add a feature map | `qmed/circuits.py` + `FEATURE_MAP_OPTIONS` in `qmed/config.py` |
+| Change a tab | Only that tab's `qmed/ui/tab_*.py` file |
+| Add a new tab | Create `qmed/ui/tab_<name>.py` with a `render(...)` function and register it in `app.py` |
+
+### Caching
+
+Streamlit reruns `app.py` from top to bottom on every widget interaction. `cached_prepare` (`st.cache_data`) and `cached_train` (`st.cache_resource`) store results keyed by their arguments, so moving a simulator slider is instant and only a change in sidebar settings triggers retraining. Every argument is a plain, hashable value, and circuits are rebuilt *inside* `cached_train`. **When adding a new setting that affects training, pass it to `cached_train` as an argument**, or old models will be reused. The cache lives in memory and is cleared when the app restarts.
+
+### Using the pipeline without Streamlit
+
+```python
+from qmed.config import DATASETS
+from qmed.data import prepare_data
+from qmed.circuits import build_feature_map, build_ansatz
+from qmed.models import train_all_models
+from qmed.metrics import benchmark_table
+
+d = prepare_data(DATASETS["Statlog Heart Disease (Cardiology)"], max_samples=100, n_qubits=3)
+results = train_all_models(
+    d.X_train_q, d.y_train, d.X_test_q,
+    feature_map=build_feature_map("ZZFeatureMap", 3, reps=2, entanglement="linear"),
+    ansatz=build_ansatz(3, reps=2, entanglement="linear"),
+    vqc_iter=35,
+)
+print(benchmark_table(results, d.y_test))
+```
+
+### Known limitations
+
+- **Quantum scores vary between runs.** `StatevectorSampler` samples measurement shots without a fixed seed, and VQC starts training from random weights, so QSVC and VQC metrics change slightly on every retrain. Classical baselines are fully deterministic (`random_state=42`).
+- **Simulated, not real hardware.** All circuits run on a local statevector simulator; cost grows as $2^n$, which is why qubits are capped at 4.
 
 ---
 
