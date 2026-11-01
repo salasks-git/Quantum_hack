@@ -20,7 +20,7 @@ st.title("🧬 Q-Med: Multi-Domain Hybrid Quantum Disease Classifier")
 st.markdown(
     "**Qiskit Fall Fest 2026 · Quantum Hack Day Kochi | Challenge 02: Healthcare QML**  \n"
     "Benchmarking Quantum Kernel Support Vector Machines (`QSVC`) and Variational Quantum Classifiers (`VQC`) "
-    "against classical baselines across Oncology, Neurology, Cardiology, Endocrinology, and Orthopedics datasets."
+    "against classical baselines across Oncology, Neurology, Cardiology, Endocrinology, Orthopedics, Nephrology, and Obstetrics cohorts."
 )
 
 
@@ -65,7 +65,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "🔬 5. IBM Quantum Hardware Latency (Real QPU)",
     "🩺 6. Live Patient Diagnostic Simulator",
     "🎚️ 7. Kernel Bandwidth Lab",
-    "🧠 8. QuHaMA: Adaptive Neural-Quantum Architecture",
+    "🧠 8. QuHaMA & Elite Hybrid Architectures",
 ])
 with tab1:
     tab_dataset.render(cfg, data)

@@ -1,1 +1,0 @@
-approach_6.py

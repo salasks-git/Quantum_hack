@@ -168,6 +168,48 @@ Every data-encoding quantum circuit in QML maps classical inputs $\vec{x} \in [0
   Superposition  Individual Rotations      Pairwise Entangling Gates
 ```
 
+```mermaid
+flowchart LR
+    subgraph QC["Quantum Circuit Details (ZZFeatureMap + RealAmplitudes on 3 Qubits)"]
+        direction LR
+        subgraph Q0["Qubit Wire q0"]
+            q0_in["|0⟩"] --> H0["[H] Hadamard Gate"]
+            H0 --> RZ0["[Rz(2θ₀)] Phase Rotation"]
+            RZ0 --> CNOT01_ctrl["● Control"]
+            CNOT01_ctrl --> RZZ01["[Rz(2(π-θ₀)(π-θ₁))] Entanglement"]
+            RZZ01 --> CNOT01_ctrl2["● Control"]
+            CNOT01_ctrl2 --> RY0["[Ry(φ₀)] Trainable Rotation"]
+            RY0 --> M0["[⟨Z₀⟩] Pauli-Z Readout"]
+        end
+
+        subgraph Q1["Qubit Wire q1"]
+            q1_in["|0⟩"] --> H1["[H] Hadamard Gate"]
+            H1 --> RZ1["[Rz(2θ₁)] Phase Rotation"]
+            RZ1 --> CNOT01_tgt["⊕ Target"]
+            CNOT01_tgt --> PASS1["Phase Accumulation"]
+            PASS1 --> CNOT01_tgt2["⊕ Target"]
+            CNOT01_tgt2 --> CNOT12_ctrl["● Control"]
+            CNOT12_ctrl --> RZZ12["[Rz(2(π-θ₁)(π-θ₂))] Entanglement"]
+            RZZ12 --> CNOT12_ctrl2["● Control"]
+            CNOT12_ctrl2 --> RY1["[Ry(φ₁)] Trainable Rotation"]
+            RY1 --> M1["[⟨Z₁⟩] Pauli-Z Readout"]
+        end
+
+        subgraph Q2["Qubit Wire q2"]
+            q2_in["|0⟩"] --> H2["[H] Hadamard Gate"]
+            H2 --> RZ2["[Rz(2θ₂)] Phase Rotation"]
+            RZ2 --> PASS2a["Phase Accumulation"]
+            PASS2a --> PASS2b["Phase Accumulation"]
+            PASS2b --> PASS2c["Phase Accumulation"]
+            PASS2c --> CNOT12_tgt["⊕ Target"]
+            CNOT12_tgt --> PASS2d["Phase Accumulation"]
+            PASS2d --> CNOT12_tgt2["⊕ Target"]
+            CNOT12_tgt2 --> RY2["[Ry(φ₂)] Trainable Rotation"]
+            RY2 --> M2["[⟨Z₂⟩] Pauli-Z Readout"]
+        end
+    end
+```
+
 1. **Hadamard Layer ($H^{\otimes n}$):** Creates an equiprobable superposition across all $2^n$ computational basis states:
    $$|0\rangle^{\otimes n} \mapsto \frac{1}{\sqrt{2^n}} \sum_{z \in \{0, 1\}^n} |z\rangle$$
 2. **Single-Qubit Rotation Layer:** Encodes individual principal components $x_j$ along a selected Bloch axis (e.g., $R_z(2 x_j) = \exp(-i x_j Z)$).
@@ -378,6 +420,72 @@ The **QuHaMA** architecture extends standard hybrid models into an end-to-end ad
    $$[w_{\text{classical}}(\vec{x}), w_{\text{quantum}}(\vec{x})] = \text{Softmax}(\text{Linear}(k + 2, 2))$$
    For prototypical, high-density patients, it assigns higher weight to the classical branch. For edge cases and non-local parity interactions, it automatically allocates greater weight to the quantum phase branch.
 
+```mermaid
+flowchart TD
+    subgraph QuHaMA["Approach 1: QuHaMA (Quantum-Hybrid Adaptive Multi-branch Architecture)"]
+        raw_x["Patient Biomarkers x ∈ ℝ^d"] --> enc["Neural Encoder E(x): Linear → BatchNorm → ReLU → Linear → Tanh"]
+        enc --> latent["Latent Features z ∈ [-1, 1]^k (k = n_qubits)"]
+        
+        latent --> class_head["Classical Branch: Deep MLP Head"]
+        class_head --> p_class["Classical Probability P_c(y=1|x)"]
+        
+        latent --> angle_map["Angle Mapping: θ = (z + 1) · (π/2) ∈ [0, π]^k"]
+        angle_map --> q_circuit["Quantum Branch: Parameterized Quantum Circuit (H, Rz, Rzz)"]
+        q_circuit --> p_quant["Quantum Probability P_q(y=1|x)"]
+        
+        latent --> gating["Adaptive Meta-Gating Network G(z, P_c, P_q)"]
+        p_class --> gating
+        p_quant --> gating
+        gating --> weights["Dynamic Weights [w_c, w_q] (w_c + w_q = 1.0)"]
+        
+        p_class --> fusion["Soft Consensus Fusion: P_final = w_c · P_c + w_q · P_q"]
+        p_quant --> fusion
+        weights --> fusion
+        fusion --> decision{"Diagnostic Decision: 𝟙[P_final ≥ 0.5]"}
+        decision --> benign["Benign / Non-Pathological (0)"]
+        decision --> malignant["Malignant / Pathological (1)"]
+    end
+```
+
+---
+
+### 4.6 Bandwidth-Scaled Centered Kernel-Target Alignment (Q-CKTA) Hybrid
+
+To resolve the "quantum kernel concentration curse" (where unscaled quantum kernels $s=1.0$ approach near-identity matrices), the Q-CKTA Hybrid optimizes the feature map bandwidth parameter $s$ via statistical learning theory:
+
+$$\theta_s = s \cdot x \in [0, s \cdot \pi]^n, \quad K_{\text{Quantum}}(x, x'; s) = |\langle \psi(s \cdot x) \mid \psi(s \cdot x') \rangle|^2$$
+
+Centered Kernel-Target Alignment (CKTA) measures the matrix inner product between centered Gram matrices $K_c$ and the ideal target label matrix $Y_c = H (y y^T) H$:
+
+$$\text{CKTA}(K, Y) = \frac{\langle K_c, Y_c \rangle_F}{\|K_c\|_F \cdot \|Y_c\|_F}$$
+
+The hybrid kernel is formed via data-driven convex combination:
+$$w_c = \frac{A_{\text{RBF}}}{A_{\text{RBF}} + A_{\text{Quantum}}(s^*)}, \quad w_q = 1 - w_c$$
+$$K_{\text{Hybrid}}(s^*) = w_c \cdot K_{\text{RBF}} + w_q \cdot K_{\text{Quantum}}(s^*)$$
+
+```mermaid
+flowchart TD
+    subgraph QCKTA["Approach 3: Bandwidth-Scaled Q-CKTA Hybrid"]
+        data_in["Standardized Biomarker Matrix X"] --> rbf_branch["Classical Branch: RBF Gram Matrix K_RBF"]
+        rbf_branch --> ckta_c["Compute Classical CKTA Alignment: A_c = ⟨K_c, Y_c⟩ / (||K_c|| ||Y_c||)"]
+        
+        data_in --> sweep["Bandwidth Scaling Sweep: s ∈ {0.05, 0.1, 0.2, 0.5, 1.0}"]
+        sweep --> q_branch["Quantum Kernel Gram Matrices K_Q(s) via ZZFeatureMap(s·x) with H, Rz, Rzz"]
+        q_branch --> ckta_q["Compute Quantum CKTA Alignment: A_q(s) = ⟨K_Q_c(s), Y_c⟩ / (||K_Q_c(s)|| ||Y_c||)"]
+        ckta_q --> opt_s["Select Optimal Bandwidth: s* = argmax_s A_q(s)"]
+        
+        ckta_c --> weight_calc["Alignment Weight Formulation: w_c = A_c/(A_c + A_q(s*)), w_q = 1 - w_c"]
+        opt_s --> weight_calc
+        
+        rbf_branch --> fusion_k["Convex Matrix Fusion: K_Hybrid = w_c · K_RBF + w_q · K_Q(s*)"]
+        opt_s --> fusion_k
+        weight_calc --> fusion_k
+        
+        fusion_k --> svm["Dual Support Vector Machine (C-SVM Precomputed Kernel)"]
+        svm --> out_diag["Optimal Diagnostic Classification & Probability"]
+    end
+```
+
 ---
 
 ## 5. Mitigating NISQ Hardware Noise: Classical Neural Network Insulation
@@ -422,6 +530,25 @@ Rather than executing a monolithic deep quantum circuit, the quantum processor i
                 │
                 ▼
        Calibrated Diagnosis Probability
+```
+
+```mermaid
+flowchart TD
+    subgraph HQNN["Approach 2: Neural-Quantum Sandwich (HQNN)"]
+        x_in["Clinical Biomarkers x ∈ ℝ^d"] --> pre["Classical Pre-Net: Linear(d → 16) → BatchNorm → ReLU → Linear(16 → k) → Tanh"]
+        pre --> z_lat["Latent Classical Representation z ∈ [-1, 1]^k"]
+        z_lat --> angle_conv["Bloch Angle Encoding: θ = (z + 1) · (π/2)"]
+        
+        angle_conv --> q_layer["Quantum Layer: EstimatorQNN Circuit (H, Rz, CNOT, Rzz, Ry(φ))"]
+        q_layer --> q_expect["Pauli-Z Expectation Values e_j = ⟨ψ|Z_j|ψ⟩ ∈ [-1, +1]"]
+        
+        z_lat --> concat["Concatenated Hybrid Representation: [z, e] ∈ ℝ^{2k}"]
+        q_expect --> concat
+        
+        concat --> post["Classical Post-Net: Linear(2k → 8) → ReLU → Linear(8 → 2) (Noise Absorber)"]
+        post --> logits["Logits & Softmax Probabilities P(y|x)"]
+        logits --> pred["Final Diagnosis & Clinical Confidence"]
+    end
 ```
 
 #### Why the Sandwich Absorbs Hardware Noise:

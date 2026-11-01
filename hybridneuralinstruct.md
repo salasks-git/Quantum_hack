@@ -115,18 +115,15 @@ The user proposed a novel architecture termed **QuHaMA (Quantum-Hybrid Adaptive 
 
 ---
 
-## 🏛️ Phase 4: Suite of 6 Standalone Hybrid Architectures (`approaches/`)
+## 🏛️ Phase 4: Suite of Top 3 Standalone Hybrid Architectures (`approaches/`)
 
-To answer the user's request for standalone files named `approach_<no>.py` (and `approach:<no>.py`) with detailed architecture docs and benchmark scripts, we researched and engineered 6 distinct hybrid paradigms:
+To answer the user's request for evaluating all approaches, reducing bloat, and retaining only the **top 3 elite approaches that compete with or surpass the 2 classical methods (Linear and RBF SVM) on at least one dataset**, we evaluated 6 initial candidates and pruned the suite to the top 3:
 
-| File | Architecture | Key Mathematical Feature |
-| :--- | :--- | :--- |
-| [`approach_1.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_1.py) | **QuHaMA** | Non-linear PyTorch Encoder + Dual Branch + Learned Gating Network |
-| [`approach_2.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_2.py) | **Probabilistic Dual-Reader Soft-Voting** | Calibrated Bayesian posterior fusion $P(y=1 \mid x) = \frac{1}{2}(P_{\text{RBF}} + P_{\text{QSVC}})$ |
-| [`approach_3.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_3.py) | **Geometric Composite Mercer Kernel** | Direct sum Hilbert space $\mathcal{H}_{\text{RBF}} \oplus \mathcal{H}_{\text{Q}}$ with convex combination $K = \lambda K_{\text{RBF}} + (1-\lambda) K_{\text{Q}}$ |
-| [`approach_4.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_4.py) | **Quantum Residual Learning** | ResNet-style boosting: classical SVM fits baseline; quantum SVR fits residuals $r_i = y_i - \hat{y}_{\text{classical}}$ |
-| [`approach_5.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_5.py) | **Neural-Quantum Sandwich (HQNN)** | Deep MLP Pre-Net $\to$ Parameterized `EstimatorQNN` ($\langle Z_i \rangle$) $\to$ Classical Post-Net (hardware noise filter) |
-| [`approach_6.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_6.py) | **Bandwidth-Scaled Q-CKTA Hybrid** | Centered Kernel-Target Alignment dynamically weights Gram matrices based on label correlation $\rho(K, yy^T)$ |
+| File | Architecture | Key Mathematical Feature | Dataset Where It Surpasses Classical |
+| :--- | :--- | :--- | :--- |
+| [`approach_1.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_1.py) (alias: `approach:1.py`) | **QuHaMA** | Non-linear PyTorch Encoder + Dual Branch + Learned Gating Network | **Breast Cancer (92% vs 90%)**, **Vertebral Column (70% vs 65%, $F_2$ 0.915)** |
+| [`approach_2.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_2.py) (alias: `approach:2.py`) | **Neural-Quantum Sandwich (HQNN)** | Deep MLP Pre-Net $\to$ Parameterized `EstimatorQNN` ($\langle Z_i \rangle$) $\to$ Classical Post-Net (noise filter) | **Breast Cancer (92% vs 90%)**, **Heart Disease (90% vs 85%)**, **Parkinson's (95% vs 90%)**, **Vertebral (85% vs 70%)** |
+| [`approach_3.py`](file:///home/me/Videos/quantum/Quantum_hack/approaches/approach_3.py) (alias: `approach:3.py`) | **Bandwidth-Scaled Q-CKTA Hybrid** | Centered Kernel-Target Alignment dynamically weights Gram matrices based on label correlation $\rho(K, yy^T)$ | **Pima Diabetes (70% vs 65%)**, 100% Precision, 0.802 ROC-AUC |
 
 ### Symlink Creation for `approach:<no>.py`:
 Created filesystem symlinks for UNIX/CLI accessibility:
@@ -134,12 +131,165 @@ Created filesystem symlinks for UNIX/CLI accessibility:
 ln -s approach_1.py approaches/approach:1.py
 ln -s approach_2.py approaches/approach:2.py
 ln -s approach_3.py approaches/approach:3.py
-ln -s approach_4.py approaches/approach:4.py
-ln -s approach_5.py approaches/approach:5.py
-ln -s approach_6.py approaches/approach:6.py
 ```
 
-### Critical Bug Fix During Approach 5 Development:
+### Pruning and Repository Bloat Reduction:
+- Removed obsolete `approaches/approach_4.py`, `approach_5.py`, `approach_6.py` and old symlinks `approach:4.py`, `approach:5.py`, `approach:6.py`.
+- Consolidated the top-performing Sandwich HQNN as `approach_2.py` and the alignment-optimal Q-CKTA as `approach_3.py`.
+- Removed empty bloat directory `src/`.
+
+---
+
+### 🎨 Explicit Architectural & Quantum Circuit Diagrams
+
+#### 1. Quantum Circuit Architecture (Explicit Gate Decomposition with $H$, $R_z$, and $R_{zz}$ Gates)
+```mermaid
+flowchart LR
+    subgraph QC["Quantum Circuit Details (ZZFeatureMap + RealAmplitudes on 3 Qubits)"]
+        direction LR
+        subgraph Q0["Qubit Wire q0"]
+            q0_in["|0⟩"] --> H0["[H] Hadamard Gate"]
+            H0 --> RZ0["[Rz(2θ₀)] Phase Rotation"]
+            RZ0 --> CNOT01_ctrl["● Control"]
+            CNOT01_ctrl --> RZZ01["[Rz(2(π-θ₀)(π-θ₁))] Entanglement"]
+            RZZ01 --> CNOT01_ctrl2["● Control"]
+            CNOT01_ctrl2 --> RY0["[Ry(φ₀)] Trainable Rotation"]
+            RY0 --> M0["[⟨Z₀⟩] Pauli-Z Readout"]
+        end
+
+        subgraph Q1["Qubit Wire q1"]
+            q1_in["|0⟩"] --> H1["[H] Hadamard Gate"]
+            H1 --> RZ1["[Rz(2θ₁)] Phase Rotation"]
+            RZ1 --> CNOT01_tgt["⊕ Target"]
+            CNOT01_tgt --> PASS1["Phase Accumulation"]
+            PASS1 --> CNOT01_tgt2["⊕ Target"]
+            CNOT01_tgt2 --> CNOT12_ctrl["● Control"]
+            CNOT12_ctrl --> RZZ12["[Rz(2(π-θ₁)(π-θ₂))] Entanglement"]
+            RZZ12 --> CNOT12_ctrl2["● Control"]
+            CNOT12_ctrl2 --> RY1["[Ry(φ₁)] Trainable Rotation"]
+            RY1 --> M1["[⟨Z₁⟩] Pauli-Z Readout"]
+        end
+
+        subgraph Q2["Qubit Wire q2"]
+            q2_in["|0⟩"] --> H2["[H] Hadamard Gate"]
+            H2 --> RZ2["[Rz(2θ₂)] Phase Rotation"]
+            RZ2 --> PASS2a["Phase Accumulation"]
+            PASS2a --> PASS2b["Phase Accumulation"]
+            PASS2b --> PASS2c["Phase Accumulation"]
+            PASS2c --> CNOT12_tgt["⊕ Target"]
+            CNOT12_tgt --> PASS2d["Phase Accumulation"]
+            PASS2d --> CNOT12_tgt2["⊕ Target"]
+            CNOT12_tgt2 --> RY2["[Ry(φ₂)] Trainable Rotation"]
+            RY2 --> M2["[⟨Z₂⟩] Pauli-Z Readout"]
+        end
+    end
+```
+
+#### 2. Classical Deep Feature Compression & Classification Network
+```mermaid
+flowchart TD
+    subgraph NN["Classical Neural Feature Compression & Classification Network"]
+        direction TB
+        in_raw["Raw Clinical Biomarkers (d-dimensional vector x)"]
+        dense1["Linear Layer (d → 16 dimensions)"]
+        bn1["Batch Normalization (1D)"]
+        relu1["ReLU Activation: max(0, x)"]
+        dense2["Linear Layer (16 → k latent dimensions, k = n_qubits)"]
+        tanh1["Tanh Activation: z ∈ [-1, +1]^k"]
+        
+        in_raw --> dense1
+        dense1 --> bn1
+        bn1 --> relu1
+        relu1 --> dense2
+        dense2 --> tanh1
+
+        subgraph Head["Classical Deep Head"]
+            head_dense1["Linear Layer (k → 8 dimensions)"]
+            head_relu["ReLU Activation"]
+            head_dense2["Linear Layer (8 → 2 logits)"]
+            head_softmax["Softmax Activation: P(y | x)"]
+            
+            tanh1 -.-> head_dense1
+            head_dense1 --> head_relu
+            head_relu --> head_dense2
+            head_dense2 --> head_softmax
+        end
+    end
+```
+
+#### 3. Approach 1: QuHaMA (Adaptive Gating Architecture)
+```mermaid
+flowchart TD
+    subgraph QuHaMA["Approach 1: QuHaMA (Quantum-Hybrid Adaptive Multi-branch Architecture)"]
+        raw_x["Patient Biomarkers x ∈ ℝ^d"] --> enc["Neural Encoder E(x): Linear → BatchNorm → ReLU → Linear → Tanh"]
+        enc --> latent["Latent Features z ∈ [-1, 1]^k (k = n_qubits)"]
+        
+        latent --> class_head["Classical Branch: Deep MLP Head"]
+        class_head --> p_class["Classical Probability P_c(y=1|x)"]
+        
+        latent --> angle_map["Angle Mapping: θ = (z + 1) · (π/2) ∈ [0, π]^k"]
+        angle_map --> q_circuit["Quantum Branch: Parameterized Quantum Circuit (H, Rz, Rzz)"]
+        q_circuit --> p_quant["Quantum Probability P_q(y=1|x)"]
+        
+        latent --> gating["Adaptive Meta-Gating Network G(z, P_c, P_q)"]
+        p_class --> gating
+        p_quant --> gating
+        gating --> weights["Dynamic Weights [w_c, w_q] (w_c + w_q = 1.0)"]
+        
+        p_class --> fusion["Soft Consensus Fusion: P_final = w_c · P_c + w_q · P_q"]
+        p_quant --> fusion
+        weights --> fusion
+        fusion --> decision{"Diagnostic Decision: 𝟙[P_final ≥ 0.5]"}
+        decision --> benign["Benign / Non-Pathological (0)"]
+        decision --> malignant["Malignant / Pathological (1)"]
+    end
+```
+
+#### 4. Approach 2: Neural-Quantum Sandwich HQNN
+```mermaid
+flowchart TD
+    subgraph HQNN["Approach 2: Neural-Quantum Sandwich (HQNN)"]
+        x_in["Clinical Biomarkers x ∈ ℝ^d"] --> pre["Classical Pre-Net: Linear(d → 16) → BatchNorm → ReLU → Linear(16 → k) → Tanh"]
+        pre --> z_lat["Latent Classical Representation z ∈ [-1, 1]^k"]
+        z_lat --> angle_conv["Bloch Angle Encoding: θ = (z + 1) · (π/2)"]
+        
+        angle_conv --> q_layer["Quantum Layer: EstimatorQNN Circuit (H, Rz, CNOT, Rzz, Ry(φ))"]
+        q_layer --> q_expect["Pauli-Z Expectation Values e_j = ⟨ψ|Z_j|ψ⟩ ∈ [-1, +1]"]
+        
+        z_lat --> concat["Concatenated Hybrid Representation: [z, e] ∈ ℝ^{2k}"]
+        q_expect --> concat
+        
+        concat --> post["Classical Post-Net: Linear(2k → 8) → ReLU → Linear(8 → 2) (Noise Absorber)"]
+        post --> logits["Logits & Softmax Probabilities P(y|x)"]
+        logits --> pred["Final Diagnosis & Clinical Confidence"]
+    end
+```
+
+#### 5. Approach 3: Bandwidth-Scaled Q-CKTA Hybrid
+```mermaid
+flowchart TD
+    subgraph QCKTA["Approach 3: Bandwidth-Scaled Q-CKTA Hybrid"]
+        data_in["Standardized Biomarker Matrix X"] --> rbf_branch["Classical Branch: RBF Gram Matrix K_RBF"]
+        rbf_branch --> ckta_c["Compute Classical CKTA Alignment: A_c = ⟨K_c, Y_c⟩ / (||K_c|| ||Y_c||)"]
+        
+        data_in --> sweep["Bandwidth Scaling Sweep: s ∈ {0.05, 0.1, 0.2, 0.5, 1.0}"]
+        sweep --> q_branch["Quantum Kernel Gram Matrices K_Q(s) via ZZFeatureMap(s·x) with H, Rz, Rzz"]
+        q_branch --> ckta_q["Compute Quantum CKTA Alignment: A_q(s) = ⟨K_Q_c(s), Y_c⟩ / (||K_Q_c(s)|| ||Y_c||)"]
+        ckta_q --> opt_s["Select Optimal Bandwidth: s* = argmax_s A_q(s)"]
+        
+        ckta_c --> weight_calc["Alignment Weight Formulation: w_c = A_c/(A_c + A_q(s*)), w_q = 1 - w_c"]
+        opt_s --> weight_calc
+        
+        rbf_branch --> fusion_k["Convex Matrix Fusion: K_Hybrid = w_c · K_RBF + w_q · K_Q(s*)"]
+        opt_s --> fusion_k
+        weight_calc --> fusion_k
+        
+        fusion_k --> svm["Dual Support Vector Machine (C-SVM Precomputed Kernel)"]
+        svm --> out_diag["Optimal Diagnostic Classification & Probability"]
+    end
+```
+
+### Critical Optimization During Sandwich HQNN Development:
 - **Issue:** The initial implementation used `SamplerQNN` with finite shots and parameter-shift gradients, requiring $>21\text{ s}$ per run and suffering from barren plateaus / vanishing gradients on small clinical samples.
 - **Resolution:** Upgraded to Qiskit Machine Learning's `EstimatorQNN` using `StatevectorEstimator` evaluating Pauli-Z expectation values $\langle Z_i \rangle$. This reduced runtime from $21\text{ s}$ to **$0.14\text{ s}$ ($150\times$ speedup)** while improving convergence stability.
 
@@ -310,7 +460,7 @@ Hybrid models (**Approach 5: Sandwich HQNN** and **Approach 1: QuHaMA**) beat bo
 
 ## 🚀 How to Run and Reproduce
 
-### 1. Run Any Hybrid Approach Standalone:
+### 1. Run Any Top 3 Hybrid Approach Standalone:
 ```bash
 # Activate virtual environment
 source venv/bin/activate
@@ -320,8 +470,15 @@ python approaches/approach_1.py
 # Or via colon alias:
 python approaches/approach:1.py
 
-# Execute Sandwich HQNN (Approach 5)
-python approaches/approach_5.py
+# Execute Sandwich HQNN (Approach 2)
+python approaches/approach_2.py
+# Or via colon alias:
+python approaches/approach:2.py
+
+# Execute Bandwidth-Scaled Q-CKTA Hybrid (Approach 3)
+python approaches/approach_3.py
+# Or via colon alias:
+python approaches/approach:3.py
 ```
 
 ### 2. Launch the Interactive Web Dashboard:

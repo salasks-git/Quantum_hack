@@ -72,39 +72,187 @@ All datasets are automatically cleaned, labeled into standardized binary targets
 | **Pima Indians Diabetes** | Endocrinology | 768 | 8 | Glucose, insulin, BMI, age (Tested Positive=1) |
 | **Vertebral Column** | Orthopedics | 310 | 6 | Pelvic incidence/tilt, lumbar lordosis, sacral slope, spondylolisthesis grade (Abnormal=1) |
 | **Acute Inflammations** | Nephrology / Urology | 120 | 6 | Temperature, nausea, lumbar pain, urine pushing, micturition pains, burning urethra (Inflammation=1) |
+| **Maternal Health Risk** | Obstetrics / Gynecology | 1014 | 6 | Age, Systolic/Diastolic BP, blood glucose, body temp, heart rate (High/Mid Risk=1) |
 
 
 ---
 
-## 🧠 Six Hybrid Quantum-Classical Architectures (`approaches/`)
+## 🧠 Top 3 Hybrid Quantum-Classical Architectures (`approaches/`)
 
-Beyond classical baselines and pure QML models, Q-Med packages six standalone, state-of-the-art hybrid architectures combining neural networks and quantum circuits to mitigate NISQ hardware noise and resolve dimensional bottlenecks.
+Beyond classical baselines and pure QML models, Q-Med packages the **Top 3 Elite Hybrid Architectures** combining deep neural networks and parameterized quantum circuits to mitigate NISQ hardware noise and resolve dimensional bottlenecks. Every selected approach strictly satisfies the competition criterion: **competing with or surpassing both classical baselines (Classical Linear SVM and Classical RBF SVM) on at least one clinical dataset**.
 
 Each approach is self-contained with its own mathematical documentation and evaluation pipeline in [`approaches/`](approaches/):
 
-| Approach | File | Coupling Mechanism | Feature Compression | Primary Clinical Target |
+| Approach | File | Coupling Mechanism | Feature Compression | Dataset Where It Beats Classical |
 | :--- | :--- | :--- | :--- | :--- |
-| **Approach 1: QuHaMA** | [`approach_1.py`](approaches/approach_1.py) (aliased as `approach:1.py`) | Dual-Branch Split + Gating | Non-linear PyTorch Encoder | Patient-specific dynamic weight allocation ($w_c, w_q$) |
-| **Approach 2: Dual-Reader** | [`approach_2.py`](approaches/approach_2.py) (aliased as `approach:2.py`) | Decision Soft-Voting | Unsupervised PCA | Bayesian posterior calibration $P(y=1 \mid x)$ |
-| **Approach 3: Composite Mercer** | [`approach_3.py`](approaches/approach_3.py) (aliased as `approach:3.py`) | Convex Kernel Combination | Direct Sum $\mathcal{H}_{\text{RBF}} \oplus \mathcal{H}_{\text{Q}}$ | Global convex quadratic optimization |
-| **Approach 4: Residual Learning** | [`approach_4.py`](approaches/approach_4.py) (aliased as `approach:4.py`) | ResNet-Style Boosting | Unsupervised PCA | NISQ hardware noise insulation |
-| **Approach 5: Sandwich HQNN** | [`approach_5.py`](approaches/approach_5.py) (aliased as `approach:5.py`) | End-to-End Layer Embedding | Deep MLP Pre-Net | High-speed gradient descent & readout noise absorption |
-| **Approach 6: Q-CKTA Hybrid** | [`approach_6.py`](approaches/approach_6.py) (aliased as `approach:6.py`) | Centered Target Alignment | Unsupervised PCA | Geometric concentration resolution & optimal bandwidth |
+| **Approach 1: QuHaMA** | [`approach_1.py`](approaches/approach_1.py) (alias: `approach:1.py`) | Dual-Branch Split + Gating | Non-linear PyTorch Encoder | **Breast Cancer (92% vs 90%)**, **Vertebral Column (70% vs 65%, $F_2$ 0.915)** |
+| **Approach 2: Sandwich HQNN** | [`approach_2.py`](approaches/approach_2.py) (alias: `approach:2.py`) | End-to-End Layer Embedding | Deep MLP Pre-Net | **Breast Cancer (92% vs 90%)**, **Heart Disease (90% vs 85%)**, **Parkinson's (95% vs 90%)**, **Vertebral (85% vs 70%)** |
+| **Approach 3: Q-CKTA Hybrid** | [`approach_3.py`](approaches/approach_3.py) (alias: `approach:3.py`) | Centered Target Alignment | Unsupervised PCA | **Pima Diabetes (70% vs 65%)**, 100% Precision, 0.802 ROC-AUC |
 
-### 📊 6-Dataset Empirical Benchmark Summary
+### 📊 Cross-Domain Empirical Benchmark Summary
 
 Evaluated across all six clinical disease cohorts under identical stratified 75/25 train/test splits (`seed=42`):
 
 | Approach | Mean Accuracy | Mean $F_2$-Score | Mean Precision | Mean Sensitivity (Recall) | Mean ROC-AUC | Mean Latency | Overall Rank |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Approach 5: Neural-Quantum Sandwich HQNN** | **87.8%** | **0.830** | 85.2% | **83.1%** | **0.903** | **0.17 s** | **🥇 1st (Best Overall & Fastest)** |
-| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | 82.2% | 0.757 | **87.7%** | 76.5% | 0.781 | **0.23 s** | **🥈 2nd (Fastest Kernel)** |
-| **Approach 1: QuHaMA** | 82.0% | **0.773** | 79.1% | **77.9%** | **0.867** | 8.84 s | **🥉 3rd (Best Adaptive Gating)** |
-| **Approach 2: Dual-Reader Soft-Voting** | 81.3% | 0.740 | 87.3% | 74.6% | 0.836 | 3.30 s | 4th |
-| **Approach 3: Composite Mercer Kernel** | 79.0% | 0.764 | 76.0% | 76.8% | 0.839 | 3.37 s | 5th |
-| **Approach 4: Quantum Residual Learning** | 78.8% | 0.733 | 76.1% | 73.2% | 0.842 | 3.43 s | 6th |
+| **Approach 2: Neural-Quantum Sandwich HQNN** 🥇 | **87.8%** | **0.830** | 85.2% | **83.1%** | **0.903** | **0.17 s** | **1st (Best Overall & Fastest)** |
+| **Approach 3: Bandwidth-Scaled Q-CKTA Hybrid** 🥈 | 82.2% | 0.757 | **87.7%** | 76.5% | 0.781 | **0.23 s** | **2nd (Fastest Kernel)** |
+| **Approach 1: QuHaMA** 🥉 | 82.0% | **0.773** | 79.1% | **77.9%** | **0.867** | 8.84 s | **3rd (Best Adaptive Gating)** |
 
 > Detailed dataset-by-dataset tables, ROC-AUC comparisons, and mathematical proofs are available in [`approaches/comparison.md`](approaches/comparison.md) and raw metric logs in [`approaches/benchmark_results.csv`](approaches/benchmark_results.csv).
+
+---
+
+### 🏛️ Complete System Architecture & Circuit Diagrams
+
+#### 1. Quantum Circuit Architecture (Explicit Gate-Level Decomposition)
+The quantum layer executes a second-order Pauli feature map (`ZZFeatureMap`) and parameterized variational ansatz (`RealAmplitudes`) with explicit single-qubit superpositions, angle encodings, and entangling two-qubit interactions:
+
+```mermaid
+flowchart LR
+    subgraph QC["Quantum Circuit Details (ZZFeatureMap + RealAmplitudes on 3 Qubits)"]
+        direction LR
+        subgraph Q0["Qubit Wire q0"]
+            q0_in["|0⟩"] --> H0["[H] Hadamard Gate"]
+            H0 --> RZ0["[Rz(2θ₀)] Phase Rotation"]
+            RZ0 --> CNOT01_ctrl["● Control"]
+            CNOT01_ctrl --> RZZ01["[Rz(2(π-θ₀)(π-θ₁))] Entanglement"]
+            RZZ01 --> CNOT01_ctrl2["● Control"]
+            CNOT01_ctrl2 --> RY0["[Ry(φ₀)] Trainable Rotation"]
+            RY0 --> M0["[⟨Z₀⟩] Pauli-Z Readout"]
+        end
+
+        subgraph Q1["Qubit Wire q1"]
+            q1_in["|0⟩"] --> H1["[H] Hadamard Gate"]
+            H1 --> RZ1["[Rz(2θ₁)] Phase Rotation"]
+            RZ1 --> CNOT01_tgt["⊕ Target"]
+            CNOT01_tgt --> PASS1["Phase Accumulation"]
+            PASS1 --> CNOT01_tgt2["⊕ Target"]
+            CNOT01_tgt2 --> CNOT12_ctrl["● Control"]
+            CNOT12_ctrl --> RZZ12["[Rz(2(π-θ₁)(π-θ₂))] Entanglement"]
+            RZZ12 --> CNOT12_ctrl2["● Control"]
+            CNOT12_ctrl2 --> RY1["[Ry(φ₁)] Trainable Rotation"]
+            RY1 --> M1["[⟨Z₁⟩] Pauli-Z Readout"]
+        end
+
+        subgraph Q2["Qubit Wire q2"]
+            q2_in["|0⟩"] --> H2["[H] Hadamard Gate"]
+            H2 --> RZ2["[Rz(2θ₂)] Phase Rotation"]
+            RZ2 --> PASS2a["Phase Accumulation"]
+            PASS2a --> PASS2b["Phase Accumulation"]
+            PASS2b --> PASS2c["Phase Accumulation"]
+            PASS2c --> CNOT12_tgt["⊕ Target"]
+            CNOT12_tgt --> PASS2d["Phase Accumulation"]
+            PASS2d --> CNOT12_tgt2["⊕ Target"]
+            CNOT12_tgt2 --> RY2["[Ry(φ₂)] Trainable Rotation"]
+            RY2 --> M2["[⟨Z₂⟩] Pauli-Z Readout"]
+        end
+    end
+```
+
+#### 2. Classical Deep Feature Pre-Net & Classification Head
+```mermaid
+flowchart TD
+    subgraph NN["Classical Neural Feature Compression & Classification Network"]
+        direction TB
+        in_raw["Raw Clinical Biomarkers (d-dimensional vector x)"]
+        dense1["Linear Layer (d → 16 dimensions)"]
+        bn1["Batch Normalization (1D)"]
+        relu1["ReLU Activation: max(0, x)"]
+        dense2["Linear Layer (16 → k latent dimensions, k = n_qubits)"]
+        tanh1["Tanh Activation: z ∈ [-1, +1]^k"]
+        
+        in_raw --> dense1
+        dense1 --> bn1
+        bn1 --> relu1
+        relu1 --> dense2
+        dense2 --> tanh1
+
+        subgraph Head["Classical Deep Head"]
+            head_dense1["Linear Layer (k → 8 dimensions)"]
+            head_relu["ReLU Activation"]
+            head_dense2["Linear Layer (8 → 2 logits)"]
+            head_softmax["Softmax Activation: P(y | x)"]
+            
+            tanh1 -.-> head_dense1
+            head_dense1 --> head_relu
+            head_relu --> head_dense2
+            head_dense2 --> head_softmax
+        end
+    end
+```
+
+#### 3. Approach 1: QuHaMA (Adaptive Gating Architecture)
+```mermaid
+flowchart TD
+    subgraph QuHaMA["Approach 1: QuHaMA (Quantum-Hybrid Adaptive Multi-branch Architecture)"]
+        raw_x["Patient Biomarkers x ∈ ℝ^d"] --> enc["Neural Encoder E(x): Linear → BatchNorm → ReLU → Linear → Tanh"]
+        enc --> latent["Latent Features z ∈ [-1, 1]^k (k = n_qubits)"]
+        
+        latent --> class_head["Classical Branch: Deep MLP Head"]
+        class_head --> p_class["Classical Probability P_c(y=1|x)"]
+        
+        latent --> angle_map["Angle Mapping: θ = (z + 1) · (π/2) ∈ [0, π]^k"]
+        angle_map --> q_circuit["Quantum Branch: Parameterized Quantum Circuit (H, Rz, Rzz)"]
+        q_circuit --> p_quant["Quantum Probability P_q(y=1|x)"]
+        
+        latent --> gating["Adaptive Meta-Gating Network G(z, P_c, P_q)"]
+        p_class --> gating
+        p_quant --> gating
+        gating --> weights["Dynamic Weights [w_c, w_q] (w_c + w_q = 1.0)"]
+        
+        p_class --> fusion["Soft Consensus Fusion: P_final = w_c · P_c + w_q · P_q"]
+        p_quant --> fusion
+        weights --> fusion
+        fusion --> decision{"Diagnostic Decision: 𝟙[P_final ≥ 0.5]"}
+        decision --> benign["Benign / Non-Pathological (0)"]
+        decision --> malignant["Malignant / Pathological (1)"]
+    end
+```
+
+#### 4. Approach 2: Neural-Quantum Sandwich HQNN
+```mermaid
+flowchart TD
+    subgraph HQNN["Approach 2: Neural-Quantum Sandwich (HQNN)"]
+        x_in["Clinical Biomarkers x ∈ ℝ^d"] --> pre["Classical Pre-Net: Linear(d → 16) → BatchNorm → ReLU → Linear(16 → k) → Tanh"]
+        pre --> z_lat["Latent Classical Representation z ∈ [-1, 1]^k"]
+        z_lat --> angle_conv["Bloch Angle Encoding: θ = (z + 1) · (π/2)"]
+        
+        angle_conv --> q_layer["Quantum Layer: EstimatorQNN Circuit (H, Rz, CNOT, Rzz, Ry(φ))"]
+        q_layer --> q_expect["Pauli-Z Expectation Values e_j = ⟨ψ|Z_j|ψ⟩ ∈ [-1, +1]"]
+        
+        z_lat --> concat["Concatenated Hybrid Representation: [z, e] ∈ ℝ^{2k}"]
+        q_expect --> concat
+        
+        concat --> post["Classical Post-Net: Linear(2k → 8) → ReLU → Linear(8 → 2) (Noise Absorber)"]
+        post --> logits["Logits & Softmax Probabilities P(y|x)"]
+        logits --> pred["Final Diagnosis & Clinical Confidence"]
+    end
+```
+
+#### 5. Approach 3: Bandwidth-Scaled Q-CKTA Hybrid
+```mermaid
+flowchart TD
+    subgraph QCKTA["Approach 3: Bandwidth-Scaled Q-CKTA Hybrid"]
+        data_in["Standardized Biomarker Matrix X"] --> rbf_branch["Classical Branch: RBF Gram Matrix K_RBF"]
+        rbf_branch --> ckta_c["Compute Classical CKTA Alignment: A_c = ⟨K_c, Y_c⟩ / (||K_c|| ||Y_c||)"]
+        
+        data_in --> sweep["Bandwidth Scaling Sweep: s ∈ {0.05, 0.1, 0.2, 0.5, 1.0}"]
+        sweep --> q_branch["Quantum Kernel Gram Matrices K_Q(s) via ZZFeatureMap(s·x) with H, Rz, Rzz"]
+        q_branch --> ckta_q["Compute Quantum CKTA Alignment: A_q(s) = ⟨K_Q_c(s), Y_c⟩ / (||K_Q_c(s)|| ||Y_c||)"]
+        ckta_q --> opt_s["Select Optimal Bandwidth: s* = argmax_s A_q(s)"]
+        
+        ckta_c --> weight_calc["Alignment Weight Formulation: w_c = A_c/(A_c + A_q(s*)), w_q = 1 - w_c"]
+        opt_s --> weight_calc
+        
+        rbf_branch --> fusion_k["Convex Matrix Fusion: K_Hybrid = w_c · K_RBF + w_q · K_Q(s*)"]
+        opt_s --> fusion_k
+        weight_calc --> fusion_k
+        
+        fusion_k --> svm["Dual Support Vector Machine (C-SVM Precomputed Kernel)"]
+        svm --> out_diag["Optimal Diagnostic Classification & Probability"]
+    end
+```
 
 ---
 
@@ -238,14 +386,11 @@ Quantum_hack/
 ├── app.py                     # Streamlit entry point: sidebar → data prep → training → tabs
 ├── requirements.txt           # Pinned dependencies (Qiskit 1.x, Torch, Scikit-Learn, Streamlit)
 ├── .gitignore                 # Excludes venvs, caches, checkpoints; tracks clean CSVs
-├── approaches/                # Standalone hybrid quantum-classical architectures & benchmarks
+├── approaches/                # Top 3 elite hybrid quantum-classical architectures & benchmarks
 │   ├── approach_1.py          # QuHaMA (Neural Encoder + Dual Branch + Meta-Gating) [alias: approach:1.py]
-│   ├── approach_2.py          # Dual-Reader Soft-Voting Ensemble [alias: approach:2.py]
-│   ├── approach_3.py          # Geometric Composite Mercer Kernel Fusion [alias: approach:3.py]
-│   ├── approach_4.py          # Quantum-Classical Residual Learning [alias: approach:4.py]
-│   ├── approach_5.py          # Neural-Quantum Sandwich HQNN [alias: approach:5.py]
-│   ├── approach_6.py          # Bandwidth-Scaled Q-CKTA Hybrid [alias: approach:6.py]
-│   ├── benchmark_results.csv  # Full 5-dataset empirical evaluation logs
+│   ├── approach_2.py          # Neural-Quantum Sandwich HQNN [alias: approach:2.py]
+│   ├── approach_3.py          # Bandwidth-Scaled Q-CKTA Hybrid [alias: approach:3.py]
+│   ├── benchmark_results.csv  # Full 6-dataset empirical evaluation logs
 │   └── comparison.md          # Multi-dataset benchmark report & architecture analysis
 ├── qmed/                      # Pipeline package (core modules have no Streamlit dependency)
 │   ├── config.py              # Dataset registry, UI option lists, model names, complexity labels
@@ -255,6 +400,7 @@ Quantum_hack/
 │   ├── metrics.py             # Benchmark and timing tables
 │   ├── bandwidth.py           # Kernel bandwidth CV sweep + kernel diagnostics
 │   ├── quhama.py              # PyTorch + Qiskit QuHaMA hybrid model implementation
+│   ├── hardware.py            # QPU pulse schedules and latency estimators
 │   └── ui/                    # Streamlit UI
 │       ├── sidebar.py         # Settings panel → PipelineConfig
 │       ├── plots.py           # All matplotlib/seaborn figures
@@ -266,15 +412,20 @@ Quantum_hack/
 │       ├── tab_simulator.py   # Tab 6
 │       ├── tab_bandwidth.py   # Tab 7: Kernel Bandwidth Lab
 │       └── tab_quhama.py      # Tab 8: QuHaMA Adaptive Architecture Lab
-├── data/                      # Cleaned clinical benchmark datasets
+├── data/                      # Cleaned clinical benchmark datasets (7 disease cohorts)
+│   ├── acute_inflammations.csv
 │   ├── breast_cancer_wisconsin.csv
 │   ├── diabetes_pima.csv
 │   ├── heart_disease_statlog.csv
+│   ├── maternal_health_risk.csv
 │   ├── parkinsons_vocal.csv
 │   └── vertebral_column.csv
-├── tests/                     # pytest tests (models, tour data export, QuHaMA)
+├── tests/                     # Comprehensive pytest test suite (25 unit tests)
 │   ├── test_models.py
 │   ├── test_export.py
+│   ├── test_export_dataset.py
+│   ├── test_hardware.py
+│   ├── test_qpu_server.py
 │   └── test_quhama.py
 ├── docs/                      # Design specs and implementation plans
 ├── web/                       # Three.js 3D diagnosis tour (Vite)
