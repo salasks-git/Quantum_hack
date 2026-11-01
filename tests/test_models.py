@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from qmed.circuits import build_ansatz, build_feature_map
-from qmed.config import DATASETS, QSVC_MODEL, VQC_MODEL
+from qmed.config import DATASETS, LINEAR_SVM, QSVC_MODEL, RBF_SVM, VQC_MODEL
 from qmed.data import prepare_data
 from qmed.models import train_all_models
 
@@ -39,4 +39,5 @@ def test_weights_history_matches_loss_history(setup):
 
 def test_seed_none_still_runs(setup):
     r, _ = _run(setup, seed=None)
-    assert len(r) == 4
+    # The four base models must always be present; extra models (e.g. the hybrid ensemble) are allowed.
+    assert {LINEAR_SVM, RBF_SVM, QSVC_MODEL, VQC_MODEL} <= set(r)
