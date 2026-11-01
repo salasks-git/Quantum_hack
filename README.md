@@ -218,7 +218,7 @@ print(benchmark_table(results, d.y_test))
 
 ### Known limitations
 
-- **Quantum scores vary between runs.** `StatevectorSampler` samples measurement shots without a fixed seed, and VQC starts training from random weights, so QSVC and VQC metrics change slightly on every retrain. Classical baselines are fully deterministic (`random_state=42`).
+- **Quantum models are seeded and repeatable.** QSVC and VQC use `seed=42` (sampler shots and VQC start weights), so retraining gives identical scores. The Streamlit settings that match the 3D tour are 3 qubits, 100 patients, ZZFeatureMap, reps 2, linear entanglement, 35 VQC iterations. Classical baselines are deterministic (`random_state=42`).
 - **Simulated, not real hardware.** All circuits run on a local statevector simulator; cost grows as $2^n$, which is why qubits are capped at 4.
 
 ---

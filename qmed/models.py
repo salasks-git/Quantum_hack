@@ -41,8 +41,12 @@ def fit_and_evaluate(model, X_train, y_train, X_test) -> dict:
     }
 
 
-def train_all_models(X_train_q, y_train, X_test_q, feature_map, ansatz, vqc_iter: int) -> dict:
-    """Return {model name: result dict}. QSVC adds ``kernel_matrix``; VQC adds ``loss_history``."""
+def train_all_models(X_train_q, y_train, X_test_q, feature_map, ansatz, vqc_iter: int,
+                     seed: int | None = RANDOM_STATE) -> dict:
+    """Return {model name: result dict}. QSVC adds ``kernel_matrix``; VQC adds ``loss_history`` and ``weights_history``.
+
+    ``seed`` makes the sampler and VQC start point repeatable (None = unseeded).
+    """
     results = {}
 
     results[LINEAR_SVM] = fit_and_evaluate(
@@ -53,7 +57,7 @@ def train_all_models(X_train_q, y_train, X_test_q, feature_map, ansatz, vqc_iter
     )
 
     # Quantum kernel: similarity = overlap of the two patients' quantum states
-    sampler = StatevectorSampler()
+    sampler = StatevectorSampler(seed=seed)
     q_kernel = FidelityQuantumKernel(feature_map=feature_map, fidelity=ComputeUncompute(sampler=sampler))
     qsvc = QSVC(quantum_kernel=q_kernel, probability=True, random_state=RANDOM_STATE)
     results[QSVC_MODEL] = fit_and_evaluate(qsvc, X_train_q, y_train, X_test_q)
@@ -61,14 +65,26 @@ def train_all_models(X_train_q, y_train, X_test_q, feature_map, ansatz, vqc_iter
 
     # Variational classifier: COBYLA tunes ansatz weights; record loss each step
     loss_history = []
+    weights_history = []
+    initial_point = (
+        np.random.default_rng(seed).uniform(-np.pi, np.pi, ansatz.num_parameters)
+        if seed is not None else None
+    )
+
+    def _record(weights, loss):
+        weights_history.append(list(map(float, weights)))
+        loss_history.append(float(loss))
+
     vqc = VQC(
         sampler=sampler,
         feature_map=feature_map,
         ansatz=ansatz,
         optimizer=COBYLA(maxiter=vqc_iter),
-        callback=lambda weights, loss: loss_history.append(loss),
+        callback=_record,
+        initial_point=initial_point,
     )
     results[VQC_MODEL] = fit_and_evaluate(vqc, X_train_q, y_train, X_test_q)
     results[VQC_MODEL]["loss_history"] = loss_history
+    results[VQC_MODEL]["weights_history"] = weights_history
 
     return results
