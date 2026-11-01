@@ -4,6 +4,7 @@ import "./style.css";
 import { loadIndex, loadDisease } from "./data.js";
 import { SceneManager } from "./sceneManager.js";
 import { renderLegend, mountLegendToggle } from "./legend.js";
+import { mountAllPatients } from "./allPatients.js";
 import scene1 from "./scenes/scene1.js";
 import scene2 from "./scenes/scene2.js";
 import scene3 from "./scenes/scene3.js";
@@ -86,10 +87,19 @@ async function selectDisease(slug) {
     $("disease").value = slug;
     fillPatients();
     rebuild();
+    allPatients.refresh(); // all-patients overlay follows the disease
   } catch (e) {
     showError(e.message);
   }
 }
+
+// --- All patients overlay (Task 17) ---
+const allPatients = mountAllPatients($("all-btn"), $("allpatients"), {
+  getData: () => state.data,
+  getPatient: () => state.patient,
+  onSelect: (i) => { state.patient = i; $("patient").value = i; rebuild(); },
+});
+// --- end All patients overlay ---
 
 function gotoStep(n) {
   state.step = Math.min(5, Math.max(1, n));
@@ -175,5 +185,6 @@ async function init() {
   sel.value = slug;
   loop();
   await selectDisease(slug);
+  if (params.get("all") === "1") allPatients.setOpen(true);
 }
 init();
