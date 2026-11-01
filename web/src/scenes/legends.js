@@ -54,3 +54,20 @@ export const LEGEND_5 = [
   { symbol: "missed diagnoses", text: "Sick test patients the model called healthy (false negatives). The most dangerous error in screening." },
   { symbol: "🏆 Clinical leader", text: "The model with the best F2 on this disease's 25 test patients." },
 ];
+
+export const LEGEND_6 = [
+  { symbol: "QPU", text: "Quantum Processing Unit: a real IBM quantum chip." },
+  { symbol: "transpile", text: "Rewrite the circuit into the only gates the chip can run natively." },
+  { symbol: "sx, x", text: "Native single-qubit pulses (~35 ns each)." },
+  { symbol: "rz", text: "Single-qubit rotation done in software (\"virtual\"), 0 ns on the chip." },
+  { symbol: "ECR", text: "Echoed Cross-Resonance: the chip's native two-qubit (entangling) gate, ~300 ns. The slowest and noisiest gate." },
+  { symbol: "depth", text: "Number of gate layers that must run one after another." },
+  { symbol: "µs / ns", text: "Microseconds / nanoseconds (millionths / billionths of a second)." },
+  { symbol: "shots", text: "How many times the circuit is run to estimate probabilities (1,024)." },
+  { symbol: "estimate", text: "Chip times computed from typical IBM gate timings, not measured." },
+  { symbol: "CPU (measured)", text: "How long this laptop's simulator actually took." },
+  { symbol: "queue", text: "Typical wait for a shared IBM machine on the free tier (~10 min); can be much longer." },
+  { symbol: "fidelity (hardware)", text: "Fraction of shots that returned 000: the chip's measured similarity K." },
+  { symbol: "fidelity (ideal)", text: "The same similarity computed perfectly on the simulator." },
+  { symbol: "noise gap", text: "Ideal − hardware: how much real-chip noise changed the answer." },
+];

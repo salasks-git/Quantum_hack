@@ -22,7 +22,7 @@ shot() { # url outfile
 
 FAIL=0
 for slug in $(node -e 'for(const d of require("./public/data/index.json"))console.log(d.slug)'); do
-  for step in 1 2 3 4 5; do
+  for step in 1 2 3 4 5 6; do
     shot "http://localhost:$PORT/?disease=$slug&step=$step" "out/$slug-$step.png" || { echo "FAIL $slug step $step"; FAIL=1; }
   done
 done

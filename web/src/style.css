@@ -29,3 +29,41 @@ button:hover,select:hover{border-color:var(--accent)}
 .lg-dot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid #fff4}
 #legend-btn.on{background:var(--accent);color:#070b16;border-color:var(--accent)}
 @media (max-width:899px){#legend{display:none}}
+/* Scene 6 live IBM QPU panel (bottom-right, step 6 only). The caption shifts into the space left of it. */
+#qpu-panel{position:absolute;right:12px;bottom:20px;z-index:3;width:320px;max-width:calc(100% - 24px);max-height:calc(100% - 40px);overflow-y:auto;background:rgba(7,11,22,.9);border:1px solid #3b3366;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.4;box-shadow:0 4px 24px rgba(0,0,0,.35)}
+#qpu-panel[hidden]{display:none}
+#stage.qpu-on #caption{left:12px;right:356px;transform:none;margin:0 auto;width:fit-content;max-width:860px}
+#stage.qpu-on #badge{left:calc((100% - 344px) / 2)}
+.qp-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--accent)}
+.qp-budget{font-weight:600;font-size:11.5px;color:#cbd5e1;background:#1e293b;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.qp-sub{color:var(--muted);font-size:11.5px;margin:2px 0 6px}
+.qp-msg{padding:6px 8px;border-radius:6px;margin:4px 0;background:#111a30}
+.qp-warn{border-left:3px solid #fbbf24}
+.qp-err{border-left:3px solid #fb7185;color:#fecdd3}
+.qp-dim{color:var(--muted)}
+.qp-msg code,.qp-note code{font-size:11.5px;background:#0b1222;border:1px solid #2a3350;border-radius:4px;padding:0 4px;color:#e9d5ff;word-break:break-word}
+.qp-actions{display:flex;gap:8px;align-items:center;margin-top:6px}
+.qp-btn{font-weight:600}
+.qp-btn[disabled]{opacity:.45;cursor:not-allowed;border-color:#2a3350}
+.qp-go{background:var(--accent);color:#070b16;border-color:var(--accent)}
+.qp-go:hover{filter:brightness(1.1)}
+.qp-link{background:none;border:none;color:#c4b5fd;text-decoration:underline;padding:4px 2px}
+.qp-note{color:var(--muted);font-size:11.5px;margin-top:5px}
+.qp-confirm{border:1px solid #fbbf24;border-radius:8px;padding:8px;background:rgba(251,191,36,.08)}
+.qp-kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0 4px}
+.qp-kv dt{color:var(--muted)}
+.qp-kv dd{margin:0}
+.qp-id{font-family:ui-monospace,Menlo,monospace;font-size:11px;word-break:break-all}
+.qp-steps{display:flex;align-items:center;gap:4px;margin:4px 0}
+.qp-steps i{color:#475569;font-style:normal}
+.qp-step{border:1px solid #2a3350;border-radius:999px;padding:1px 8px;color:#64748b}
+.qp-step.past{color:#cbd5e1;border-color:#475569}
+.qp-step.now{color:#070b16;background:var(--accent);border-color:var(--accent);animation:qp-pulse 1.2s ease-in-out infinite}
+@keyframes qp-pulse{50%{box-shadow:0 0 0 4px rgba(167,139,250,.25);filter:brightness(1.15)}}
+.qp-spin{display:inline-block;width:10px;height:10px;margin-right:6px;border:2px solid #475569;border-top-color:var(--accent);border-radius:50%;animation:qp-rot .8s linear infinite;vertical-align:-1px}
+@keyframes qp-rot{to{transform:rotate(360deg)}}
+.qp-done{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:2px}
+.qp-tag{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:#334155;color:#e2e8f0}
+.qp-tag.qp-new{background:#4ade80;color:#070b16}
+.qp-res b{color:#fff}
+@media (max-width:899px){#qpu-panel{width:260px}#stage.qpu-on #caption{right:284px}}

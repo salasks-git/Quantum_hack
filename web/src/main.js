@@ -9,8 +9,12 @@ import scene2 from "./scenes/scene2.js";
 import scene3 from "./scenes/scene3.js";
 import scene4 from "./scenes/scene4.js";
 import scene5 from "./scenes/scene5.js";
+import scene6 from "./scenes/scene6.js";
+import { mountQpuPanel } from "./qpuPanel.js";
 
-const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5];
+const STEP_FACTORIES = [scene1, scene2, scene3, scene4, scene5, scene6];
+const N_STEPS = STEP_FACTORIES.length;
+const QPU_STEP = 6; // scene 6 shows the live-run panel
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -55,11 +59,25 @@ function updateLegend() {
   panel.scrollTop = 0;
 }
 
+// Live IBM QPU panel (step 6 only). It only ever runs health/status checks on its own;
+// a job is submitted solely by the user clicking Run and then confirming (never by Play all or load).
+const qpuPanel = mountQpuPanel($("qpu-panel"));
+function updateQpuPanel() {
+  const on = state.step === QPU_STEP && !!state.data;
+  stage.classList.toggle("qpu-on", on);
+  if (on) {
+    qpuPanel.activate({ slug: state.slug, patient: state.patient, kRow: state.data.qsvc.kernel_test[state.patient] });
+  } else {
+    qpuPanel.deactivate();
+  }
+}
+
 function rebuild() {
   if (!state.data) return;
   state.advanced = false;
   manager.show(STEP_FACTORIES[state.step - 1], { data: state.data, patient: state.patient });
   updateLegend();
+  updateQpuPanel();
   document.querySelectorAll(".dot").forEach((d) => d.classList.toggle("active", +d.dataset.step === state.step));
   history.replaceState(null, "", `?disease=${state.slug}&patient=${state.patient}&step=${state.step}`);
 }
@@ -92,7 +110,7 @@ async function selectDisease(slug) {
 }
 
 function gotoStep(n) {
-  state.step = Math.min(5, Math.max(1, n));
+  state.step = Math.min(N_STEPS, Math.max(1, n));
   rebuild();
 }
 
@@ -148,14 +166,14 @@ function loop() {
   if ($("caption").innerHTML !== caption) $("caption").innerHTML = caption;
   updateBadge();
   if (state.playAll && !state.advanced && manager.elapsed > manager.duration) {
-    if (state.step < 5) { state.advanced = true; gotoStep(state.step + 1); }
+    if (state.step < N_STEPS) { state.advanced = true; gotoStep(state.step + 1); }
     else { state.playAll = false; $("playall").classList.remove("on"); }
   }
 }
 
 async function init() {
   resize();
-  state.step = Math.min(5, Math.max(1, parseInt(params.get("step")) || 1));
+  state.step = Math.min(N_STEPS, Math.max(1, parseInt(params.get("step")) || 1));
   state.patient = Math.max(0, parseInt(params.get("patient")) || 0);
   try {
     state.index = await loadIndex();
