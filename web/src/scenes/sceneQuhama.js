@@ -37,7 +37,7 @@ const T = {
   final: [10.7, 11.6], // blended gauge fills, verdict
   metrics: [12.0, 12.5], // test-metrics panel
 };
-const STOPS = [3.9, 7.1, 9.5]; // after the latent, after the branches, after the gate
+const STOPS = [3.9, 7.1, 9.5, 12.8]; // after the latent, the branches, the gate, the verdict + metrics (before Elite)
 const DURATION = 16.5;
 const TRAVEL = 0.7; // seconds per particle flight
 

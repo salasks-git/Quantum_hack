@@ -209,9 +209,10 @@ export default function createScene(ctx) {
     scene,
     cameraPos: [0, 1.4, 8.6],
     duration,
+    // Pacing: columns rise at their own pace (no per-column stops); one dwell once the whole
+    // five-column chart is complete, one on the scoreboard.
     stops: [
-      ...[0, 1, 2, 3].map((i) => RISE0 + i * STAGGER + RISE + FLIP),
-      HYB_DONE, // hybrid column resolved
+      HYB_DONE, // all five columns grown and resolved
       LEADER_AT + 0.4, // scoreboard + leader badge on screen
     ],
     update(t) {

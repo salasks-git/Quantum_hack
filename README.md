@@ -374,7 +374,7 @@ All 7 datasets in `qmed/config.py`: Parkinson's, heart disease, breast cancer, d
 | 🧪 **Custom patient** (**C**) | one slider per qubit; live predictions for a made-up patient (needs the helper) |
 | ⏸ **Pause** (**Space**), **Prev / Next**, **Replay**, **Play all** | playback; Play all runs scenes 1 to 8 |
 
-The old "3s holds" toggle has been removed.
+Pacing is built in, with no toggle. Each scene pauses for 2.5 s (⏸ countdown badge) once a chart or stage has fully formed and before it morphs into the next. Bars grow at their own pace and the pause comes after the whole chart is complete. In scene 1 the PCA orbs, with their PC values, stay on screen for over 3 s before they become Bloch spheres. Pause/Resume and Play all work through these pauses.
 
 ### Static vs live mode
 - **Static (default):** the data is precomputed by `scripts/export_tour_data.py` (plus `export_dataset_tables.py` and `export_tour_extras.py`) with settings that match the Streamlit defaults: 3 qubits, `ZZFeatureMap`, reps 2, `linear` entanglement, 100 patients, VQC 35 iterations, seed 42 and kernel bandwidth s = 0.1 (`DEFAULT_BANDWIDTH`).

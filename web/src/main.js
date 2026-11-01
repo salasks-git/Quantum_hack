@@ -248,7 +248,7 @@ function updateBadge() {
   const b = $("badge");
   let txt = "";
   if (manager.paused) txt = "\u23F8 Paused";
-  else if (manager.holding > 0) txt = `\u23F8 3s hold \u00B7 ${Math.ceil(manager.holding)}`;
+  else if (manager.holding > 0) txt = `\u23F8 ${Math.ceil(manager.holding)}`;
   if (b.textContent !== txt) b.textContent = txt;
   b.hidden = !txt;
   const cap = $("caption");

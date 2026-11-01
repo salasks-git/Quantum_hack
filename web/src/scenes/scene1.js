@@ -5,18 +5,19 @@ import {
   setOpacity, disposeTree, addLights, rowLayout, xName,
 } from "./common.js";
 
-export const duration = 10;
+export const duration = 14;
 
-// Timeline (seconds)
-const T = {
+// Timeline (seconds). Pacing: the standardised bars stay >= 2 s before merging, and the PCA orbs
+// (with their PC value labels) stay fully formed >= 3 s before they morph into Bloch spheres.
+export const T = {
   grow: [0.1, 0.8], // raw bars rise
   std: [1.6, 2.3], // lerp to standardised heights
   labels: [2.2, 2.5], // top-5 labels fade in, held until the merge
-  merge: [3.5, 4.35], // bars fly into the centre
-  orbs: [4.1, 4.55], // 3 PCA orbs emerge
-  bloch: [4.7, 5.05], // orbs turn into Bloch spheres
-  tilt: [5.05, 5.45], // |0> -> equator (Hadamard)
-  phase: [5.45, 7.2], // phase 2*angle
+  merge: [4.5, 5.35], // bars fly into the centre (standardised bars visible 2.2 s before this)
+  orbs: [5.1, 5.55], // PCA orbs emerge
+  bloch: [8.75, 9.1], // orbs turn into Bloch spheres (orbs fully visible 3.2 s before this)
+  tilt: [9.1, 9.5], // |0> -> equator (Hadamard)
+  phase: [9.5, 11.25], // phase 2*angle
 };
 
 const BASE_Y = -0.95; // bar baseline
@@ -194,7 +195,7 @@ export default function createScene(ctx) {
     scene,
     cameraPos: [0, 2.1, 6.6],
     duration,
-    stops: [T.grow[1], T.labels[1], T.orbs[1]],
+    stops: [T.grow[1], T.labels[1], T.orbs[1], T.phase[1]], // each chart fully formed, before the next morph
     update(t) {
       const pGrow = ease(seg(t, ...T.grow));
       const pStd = ease(seg(t, ...T.std));

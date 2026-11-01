@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import scene1 from "./scene1.js";
+import scene1, { T as T1 } from "./scene1.js";
 import scene2 from "./scene2.js";
 import scene3 from "./scene3.js";
 import { legend1, legend2, legend3 } from "./legends.js";
@@ -50,7 +50,7 @@ describe.each([2, 3, 4])("%i qubits", (n) => {
     const s = scene1({ data, patient: 0 });
     // one equator torus per Bloch sphere
     expect(meshCount(s.scene, (o) => o.geometry && o.geometry.type === "TorusGeometry")).toBe(n);
-    const enc = s.update(9), pca = s.update(4.3);
+    const enc = s.update(T1.phase[1]), pca = s.update((T1.orbs[1] + T1.bloch[0]) / 2); // timeline from scene1 (pacing)
     for (let k = 0; k < n; k++) expect(enc).toContain(`x${"₁₂₃₄"[k]} = `);
     expect(enc).not.toContain(`x${"₁₂₃₄₅"[n]} = `);
     expect(pca).toContain(`into ${n} principal components`);

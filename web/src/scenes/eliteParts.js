@@ -22,7 +22,7 @@ export const E = {
   leader: [9.0, 9.6],
   patient: [10.4, 11.3], // this patient's elite verdicts
 };
-export const E_STOPS = [6.6, 10.0]; // after the cards, after the leaderboard
+export const E_STOPS = [6.6, 10.0, 11.6]; // after the cards, the leaderboard, the patient verdicts
 export const E_DURATION = 16;
 
 const GOLD = 0xfbbf24;

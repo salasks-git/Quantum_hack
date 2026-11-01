@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { SceneManager } from "./sceneManager.js";
+import { HOLD_SECONDS, SceneManager } from "./sceneManager.js";
 const stubs = () => {
   const camera = { position: { set: vi.fn() } };
   const controls = { target: { set: vi.fn() }, update: vi.fn() };
@@ -43,7 +43,23 @@ describe("SceneManager holds and pause", () => {
     const adv = (d) => { t += d; m.tick(); };
     return { m, adv, last: () => seen[seen.length - 1] };
   };
-  it("holds on: time clamps at 2 for 3s then continues", () => {
+  it("holds are ON by default (no toggle needed) with a 2.5 s dwell", () => {
+    expect(HOLD_SECONDS).toBe(2.5);
+    const { camera, controls, renderer } = stubs();
+    let t = 0;
+    const m = new SceneManager(renderer, camera, controls, { now: () => t * 1000 });
+    expect(m.holds).toBe(true);
+    const seen = [];
+    m.show(() => ({ dispose() {}, update: (e) => { seen.push(e); return ""; }, scene: {}, cameraPos: [0, 0, 1], duration: 10, stops: [2] }), {});
+    t = 2.5; m.tick();
+    expect(seen.at(-1)).toBe(2);
+    expect(m.holding).toBeCloseTo(2.5 - 0.5, 6);
+    t = 4.4; m.tick();
+    expect(seen.at(-1)).toBe(2); // still dwelling (0.5 + 1.9 < 2.5)
+    t = 5.5; m.tick();
+    expect(seen.at(-1)).toBeCloseTo(3, 6); // dwell over: 3.5 s wall - 2.5 s dwell = scene time 3
+  });
+  it("holds on: time clamps at 2 for the dwell then continues", () => {
     const { m, adv, last } = setup(true);
     adv(2.5);
     expect(last()).toBe(2);

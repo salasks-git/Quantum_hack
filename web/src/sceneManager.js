@@ -1,4 +1,6 @@
-export const HOLD_SECONDS = 3;
+// Pacing: a dwell at every scene stop (a chart/stage that has fully formed, before the next morph).
+// Always on; there is no UI toggle. Pause/Resume and Play all work through it.
+export const HOLD_SECONDS = 2.5;
 export const SWAY = 0.5; // radians either side of a scene's initial azimuth
 
 export class SceneManager {
@@ -10,7 +12,7 @@ export class SceneManager {
     this.current = null;
     this.elapsed = 0;
     this._paused = false;
-    this._holds = false;
+    this._holds = opts.holds !== undefined ? !!opts.holds : true;
     this._holdLeft = 0;
     this._passed = new Set();
     this._last = this.now();
