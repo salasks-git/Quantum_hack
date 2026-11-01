@@ -213,7 +213,7 @@ with tab2:
     st.subheader("Quantum Circuit Architecture & Hilbert Space Geometry")
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown(f"**Feature Map (`{feature_map_type}`)** — Encodes $\\vec{{x}} \\in [0, \\pi]^{{{n_qubits}}}$ via non-linear $ZZ$ phase entanglement:")
+        st.markdown(f"**Feature Map (`{feature_map_type}`)** — Encodes $\\vec{{x}} \\in [0, \\pi]^{n_qubits}$ via non-linear $ZZ$ phase entanglement:")
         fig_fm = feature_map.decompose().draw(output="mpl", style="iqp")
         st.pyplot(fig_fm)
     with c2:
