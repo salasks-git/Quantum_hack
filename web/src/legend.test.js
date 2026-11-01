@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderLegend, mountLegendToggle } from "./legend.js";
-import { LEGEND_1, LEGEND_2, LEGEND_3, LEGEND_4, LEGEND_5 } from "./scenes/legends.js";
+import { LEGEND_1, LEGEND_2, LEGEND_3, LEGEND_4, LEGEND_5, LEGEND_6 } from "./scenes/legends.js";
 
 const fakeEl = () => ({ innerHTML: "", hidden: false, _l: {}, classList: { toggle() {} }, setAttribute() {}, addEventListener(n, f) { this._l[n] = f; } });
 
@@ -25,10 +25,20 @@ describe("renderLegend", () => {
   });
 });
 
-describe("scene legends (scenes 1-5)", () => {
-  it.each([[LEGEND_1], [LEGEND_2], [LEGEND_3], [LEGEND_4], [LEGEND_5]])("is non-empty with string symbol/text", (L) => {
+describe("scene legends (scenes 1-6)", () => {
+  it.each([[LEGEND_1], [LEGEND_2], [LEGEND_3], [LEGEND_4], [LEGEND_5], [LEGEND_6]])("is non-empty with string symbol/text", (L) => {
     expect(L.length).toBeGreaterThan(0);
     for (const it of L) { expect(typeof it.symbol).toBe("string"); expect(typeof it.text).toBe("string"); }
+  });
+});
+
+describe("scene 6 legend", () => {
+  it("has the verbatim QPU entries", () => {
+    expect(LEGEND_6.map((x) => x.symbol)).toEqual([
+      "QPU", "transpile", "sx, x", "rz", "ECR", "depth", "µs / ns", "shots", "estimate",
+      "CPU (measured)", "queue", "fidelity (hardware)", "fidelity (ideal)", "noise gap",
+    ]);
+    expect(LEGEND_6.find((x) => x.symbol === "noise gap").text).toBe("Ideal − hardware: how much real-chip noise changed the answer.");
   });
 });
 
