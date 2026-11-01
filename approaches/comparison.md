@@ -131,16 +131,29 @@ All 6 approaches were evaluated under identical 75/25 stratified training/testin
 
 ---
 
-### 🏆 4. Aggregate Cross-Domain Summary (All 5 Clinical Datasets)
+### Dataset 6: Acute Inflammations (Nephrology — $N=80$, 6 features, $n=2$ qubits)
+
+| Approach | Accuracy | $F_2$-Score (Recall-Weighted) | Precision | Sensitivity (Recall) | ROC-AUC | Wall-Clock Latency |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Approach 1: QuHaMA** | **1.000** | **1.000** | **1.000** | **1.000** | **1.000** | 7.06 s |
+| **Approach 2: Dual-Reader Soft-Voting** | **1.000** | **1.000** | **1.000** | **1.000** | **1.000** | 2.34 s |
+| **Approach 3: Composite Mercer Kernel** | **1.000** | **1.000** | **1.000** | **1.000** | **1.000** | 2.47 s |
+| **Approach 4: Quantum Residual Learning** | **1.000** | **1.000** | **1.000** | **1.000** | **1.000** | 2.44 s |
+| **Approach 5: Neural-Quantum Sandwich HQNN** | **1.000** | **1.000** | **1.000** | **1.000** | **1.000** | **0.23 s** |
+| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | **1.000** | **1.000** | **1.000** | **1.000** | **1.000** | **0.18 s** |
+
+---
+
+### 🏆 4. Aggregate Cross-Domain Summary (All 6 Clinical Datasets)
 
 | Approach | Mean Accuracy | Mean $F_2$-Score | Mean Precision | Mean Recall | Mean ROC-AUC | Mean Latency | Overall Ranking |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Approach 5: Neural-Quantum Sandwich HQNN** | **85.4%** | **0.796** | **82.3%** | **79.7%** | **0.884** | **0.16 s** | **🥇 1st (Best Overall & Fastest)** |
-| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | 78.6% | 0.708 | **85.3%** | 71.7% | 0.737 | **0.23 s** | **🥈 2nd (Fastest Kernel)** |
-| **Approach 1: QuHaMA** | 78.4% | **0.728** | 74.9% | **73.5%** | **0.840** | 9.20 s | **🥉 3rd (Best Adaptive Gating)** |
-| **Approach 2: Dual-Reader Soft-Voting** | 77.6% | 0.688 | 84.8% | 69.5% | 0.803 | 3.49 s | 4th |
-| **Approach 3: Composite Mercer Kernel** | 74.8% | 0.717 | 71.2% | 72.2% | 0.806 | 3.55 s | 5th |
-| **Approach 4: Quantum Residual Learning** | 74.6% | 0.680 | 71.3% | 67.8% | 0.810 | 3.63 s | 6th |
+| **Approach 5: Neural-Quantum Sandwich HQNN** | **87.8%** | **0.830** | 85.2% | **83.1%** | **0.903** | **0.17 s** | **🥇 1st (Best Overall & Fastest)** |
+| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | 82.2% | 0.757 | **87.7%** | 76.5% | 0.781 | **0.23 s** | **🥈 2nd (Fastest Kernel)** |
+| **Approach 1: QuHaMA** | 82.0% | **0.773** | 79.1% | **77.9%** | **0.867** | 8.84 s | **🥉 3rd (Best Adaptive Gating)** |
+| **Approach 2: Dual-Reader Soft-Voting** | 81.3% | 0.740 | 87.3% | 74.6% | 0.836 | 3.30 s | 4th |
+| **Approach 3: Composite Mercer Kernel** | 79.0% | 0.764 | 76.0% | 76.8% | 0.839 | 3.37 s | 5th |
+| **Approach 4: Quantum Residual Learning** | 78.8% | 0.733 | 76.1% | 73.2% | 0.842 | 3.43 s | 6th |
 
 ---
 

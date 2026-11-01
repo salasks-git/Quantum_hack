@@ -91,18 +91,18 @@ Each approach is self-contained with its own mathematical documentation and eval
 | **Approach 5: Sandwich HQNN** | [`approach_5.py`](approaches/approach_5.py) (aliased as `approach:5.py`) | End-to-End Layer Embedding | Deep MLP Pre-Net | High-speed gradient descent & readout noise absorption |
 | **Approach 6: Q-CKTA Hybrid** | [`approach_6.py`](approaches/approach_6.py) (aliased as `approach:6.py`) | Centered Target Alignment | Unsupervised PCA | Geometric concentration resolution & optimal bandwidth |
 
-### 📊 5-Dataset Empirical Benchmark Summary
+### 📊 6-Dataset Empirical Benchmark Summary
 
-Evaluated across all five clinical disease cohorts under identical stratified 75/25 train/test splits (`seed=42`):
+Evaluated across all six clinical disease cohorts under identical stratified 75/25 train/test splits (`seed=42`):
 
 | Approach | Mean Accuracy | Mean $F_2$-Score | Mean Precision | Mean Sensitivity (Recall) | Mean ROC-AUC | Mean Latency | Overall Rank |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Approach 5: Neural-Quantum Sandwich HQNN** | **85.4%** | **0.796** | **82.3%** | **79.7%** | **0.884** | **0.16 s** | **🥇 1st (Best Overall & Fastest)** |
-| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | 78.6% | 0.708 | **85.3%** | 71.7% | 0.737 | **0.23 s** | **🥈 2nd (Fastest Kernel)** |
-| **Approach 1: QuHaMA** | 78.4% | **0.728** | 74.9% | **73.5%** | **0.840** | 9.20 s | **🥉 3rd (Best Adaptive Gating)** |
-| **Approach 2: Dual-Reader Soft-Voting** | 77.6% | 0.688 | 84.8% | 69.5% | 0.803 | 3.49 s | 4th |
-| **Approach 3: Composite Mercer Kernel** | 74.8% | 0.717 | 71.2% | 72.2% | 0.806 | 3.55 s | 5th |
-| **Approach 4: Quantum Residual Learning** | 74.6% | 0.680 | 71.3% | 67.8% | 0.810 | 3.63 s | 6th |
+| **Approach 5: Neural-Quantum Sandwich HQNN** | **87.8%** | **0.830** | 85.2% | **83.1%** | **0.903** | **0.17 s** | **🥇 1st (Best Overall & Fastest)** |
+| **Approach 6: Bandwidth-Scaled Q-CKTA Hybrid** | 82.2% | 0.757 | **87.7%** | 76.5% | 0.781 | **0.23 s** | **🥈 2nd (Fastest Kernel)** |
+| **Approach 1: QuHaMA** | 82.0% | **0.773** | 79.1% | **77.9%** | **0.867** | 8.84 s | **🥉 3rd (Best Adaptive Gating)** |
+| **Approach 2: Dual-Reader Soft-Voting** | 81.3% | 0.740 | 87.3% | 74.6% | 0.836 | 3.30 s | 4th |
+| **Approach 3: Composite Mercer Kernel** | 79.0% | 0.764 | 76.0% | 76.8% | 0.839 | 3.37 s | 5th |
+| **Approach 4: Quantum Residual Learning** | 78.8% | 0.733 | 76.1% | 73.2% | 0.842 | 3.43 s | 6th |
 
 > Detailed dataset-by-dataset tables, ROC-AUC comparisons, and mathematical proofs are available in [`approaches/comparison.md`](approaches/comparison.md) and raw metric logs in [`approaches/benchmark_results.csv`](approaches/benchmark_results.csv).
 
