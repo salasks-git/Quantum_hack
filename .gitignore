@@ -6,4 +6,7 @@ __pycache__/
 .streamlit/
 .env
 *.env
-
+.superpowers/
+web/node_modules/
+web/dist/
+web/out/
