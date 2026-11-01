@@ -37,6 +37,7 @@ describe("scene 6 legend", () => {
     expect(LEGEND_6.map((x) => x.symbol)).toEqual([
       "QPU", "transpile", "sx, x", "rz", "ECR", "depth", "µs / ns", "shots", "estimate",
       "CPU (measured)", "queue", "fidelity (hardware)", "fidelity (ideal)", "noise gap",
+      "train / inference", "log scale", "F2 score", "efficiency frontier",
     ]);
     expect(LEGEND_6.find((x) => x.symbol === "noise gap").text).toBe("Ideal − hardware: how much real-chip noise changed the answer.");
   });

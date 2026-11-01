@@ -1,11 +1,16 @@
 import * as THREE from "three";
 import { LEGEND_6 } from "./legends.js";
 import { PALETTE, ease, seg, textSprite, glowSprite, setOpacity, disposeTree, addLights } from "./common.js";
+import { MODEL_KEYS, MODEL_LABELS } from "../verdict.js";
+import { clinicalScores } from "../clinical.js";
+import { fmtDuration, paretoFront, logScale, tickLabel } from "../timing.js";
 
 // Scene 6: from simulator to real QPU.
 // Part 1: the transpiled feature map U(x) (IBM native gates rz / sx / x / ecr from data.qpu.gates) slides in
 //         along 3 qubit wires as 3D blocks, then an execution cursor sweeps through it.
 // Part 2: log-scale time race: QSVC on IBM QPU (estimate) vs this CPU (measured) vs IBM cloud queue (typical).
+// Part 3: measured compute time of all 5 models (train solid + inference lighter, log axis).
+// Part 4: efficiency frontier: F2 vs total time, Pareto-optimal models connected in gold.
 
 const GATE_COL = { sx: PALETTE.classical, x: PALETTE.quantum, rz: 0x94a3b8, ecr: 0xfbbf24 };
 const WIRE_Y = [1.55, 0.75, -0.05]; // q0 top
@@ -23,11 +28,28 @@ const P1_OUT0 = 7.0, P1_OUT1 = 7.6;
 const P2_IN0 = 7.4, P2_IN1 = 7.9;
 const RACE0 = 8.1, RACE1 = 12.5; // log clock sweeps lo -> hi at constant log speed
 const RESULT_AT = RACE1 + 0.15;
-export const duration = RESULT_AT + 1.7;
+const P2_OUT0 = RESULT_AT + 0.55, P2_OUT1 = P2_OUT0 + 0.6;
+const P3_IN0 = P2_OUT0 + 0.4, P3_IN1 = P3_IN0 + 0.5;
+const TB0 = P3_IN1 + 0.2, TB1 = TB0 + 2.4; // log clock for the timing bars
+const P3_RESULT = TB1 + 0.15;
+const P3_STOP = P3_RESULT + 0.4;
+const P3_OUT0 = P3_STOP + 0.25, P3_OUT1 = P3_OUT0 + 0.6;
+const P4_IN0 = P3_OUT0 + 0.4, P4_IN1 = P4_IN0 + 0.5;
+const DOT0 = P4_IN1 + 0.1, DOT_STEP = 0.35, DOT_FADE = 0.4; // markers appear fastest -> slowest
+const LINE0 = DOT0 + 4 * DOT_STEP + DOT_FADE + 0.15, LINE1 = LINE0 + 1.2;
+const P4_RESULT = LINE1 + 0.1;
+const P4_STOP = P4_RESULT + 0.4;
+export const duration = P4_RESULT + 1.7;
 
 const AX0 = -2.0, AX1 = 4.1, AXIS_Y = -0.75;
 const P2_LIFT = 0.3; // keeps the axis labels clear of the live panel (bottom-right) at 1280 px
 const BAR_Y = [1.55, 0.75, -0.05], BAR_H = 0.42, BAR_D = 0.3;
+
+// parts 3 and 4 share one log time axis and the same screen area as part 2
+const T_BAR_Y = [1.55, 1.05, 0.55, 0.05, -0.45], T_BAR_H = 0.26, T_BAR_D = 0.2;
+const SC_TOP = 1.85; // scatter: y = 0 at AXIS_Y, y = 1 at SC_TOP
+const MODEL_COL = { linear: 0x38bdf8, rbf: 0x22d3ee, qsvc: 0xa78bfa, vqc: 0xf0abfc, hybrid: 0x4ade80 };
+const FRONT_COL = 0xfbbf24;
 
 const hex = (c) => "#" + c.toString(16).padStart(6, "0");
 const int = (n) => Math.round(n).toLocaleString("en-US");
@@ -214,6 +236,181 @@ export default function createScene(ctx) {
   p2.add(clock);
   setOpacity(p2, 0);
 
+
+  // ======================= Parts 3 + 4: timing for all 5 models =======================
+  const test = data.test;
+  const rows = MODEL_KEYS.map((k) => ({
+    key: k, label: MODEL_LABELS[k], color: MODEL_COL[k],
+    train: tm[k].train_s, inf: tm[k].inf_s, total: tm[k].total_s, f2: clinicalScores(test, k).f2,
+  }));
+  const allT = rows.flatMap((r) => [r.train, r.total]);
+  const tLo = 10 ** Math.floor(Math.log10(Math.min(...allT) * 0.7));
+  const tHi = 10 ** Math.ceil(Math.log10(Math.max(...allT) * 1.0001));
+  const tx = (v) => AX0 + logScale(v, tLo, tHi, L); // world x on the shared log axis
+  const tFrac = (v) => logScale(v, tLo, tHi, 1);
+
+  function addLogAxis(group, gridTop) {
+    const ax = new THREE.Mesh(new THREE.BoxGeometry(L, 0.02, 0.02), new THREE.MeshBasicMaterial({ color: 0x64748b }));
+    ax.position.set(AX0 + L / 2, AXIS_Y, 0);
+    group.add(ax);
+    for (let e = Math.round(Math.log10(tLo)); e <= Math.round(Math.log10(tHi)); e++) {
+      const x = tx(10 ** e);
+      const grid = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.012, gridTop - AXIS_Y),
+        new THREE.MeshBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.7, depthWrite: false })
+      );
+      grid.position.set(x, (gridTop + AXIS_Y) / 2, -0.2);
+      group.add(grid);
+      const t = textSprite(tickLabel(e), { height: 0.15, color: "#94a3b8" });
+      t.position.set(x, AXIS_Y - 0.22, 0);
+      group.add(t);
+    }
+  }
+
+  // ---- Part 3: horizontal bars, train (solid) + inference (lighter) ----
+  const p3 = new THREE.Group();
+  p3.position.y = P2_LIFT;
+  scene.add(p3);
+  addLogAxis(p3, T_BAR_Y[0] + 0.5);
+  const p3title = textSprite("measured on this laptop · log scale (each step = 10× longer)", { height: 0.14, color: "#64748b" });
+  p3title.center.set(0, 0.5);
+  p3title.position.set(AX0, AXIS_Y - 0.5, 0);
+  p3.add(p3title);
+  const unitBar = new THREE.BoxGeometry(1, T_BAR_H, T_BAR_D);
+  unitBar.translate(0.5, 0, 0);
+  const tbars = rows.map((r, i) => {
+    const y = T_BAR_Y[i];
+    const trainMat = new THREE.MeshPhongMaterial({ color: r.color, emissive: r.color, emissiveIntensity: 0.3, transparent: true, opacity: 0.95 });
+    const infMat = new THREE.MeshPhongMaterial({ color: r.color, emissive: r.color, emissiveIntensity: 0.12, transparent: true, opacity: 0.38 });
+    const trainM = new THREE.Mesh(unitBar, trainMat);
+    const infM = new THREE.Mesh(unitBar, infMat);
+    trainM.position.set(AX0, y, 0);
+    infM.position.set(AX0, y, 0);
+    trainM.scale.x = infM.scale.x = 0.001;
+    p3.add(trainM, infM);
+    const name = textSprite(r.label, { height: 0.16, color: hex(r.color) });
+    name.center.set(0, 0.5);
+    name.position.set(AX0, y + T_BAR_H / 2 + 0.13, 0);
+    p3.add(name);
+    const val = textSprite(fmtDuration(r.total), { height: 0.19, color: "#ffffff" });
+    val.center.set(0, 0.5);
+    val.position.set(tx(r.total) + 0.12, y, 0);
+    p3.add(val);
+    const split = textSprite(`train ${fmtDuration(r.train)} · inference ${fmtDuration(r.inf)}`, { height: 0.11, color: "#94a3b8", weight: 500 });
+    split.center.set(0, 0.5);
+    split.position.set(tx(r.total) + 0.12, y - 0.19, 0);
+    p3.add(split);
+    return { ...r, trainM, infM, trainMat, infMat, val, split, xTrain: tx(r.train), xTot: tx(r.total), f: tFrac(r.total) };
+  });
+  const tclock = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.03, T_BAR_Y[0] - AXIS_Y + 0.5),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false })
+  );
+  tclock.position.y = (T_BAR_Y[0] + 0.4 + AXIS_Y) / 2;
+  p3.add(tclock);
+  setOpacity(p3, 0);
+
+  const byTotal = [...rows].sort((a, b) => a.total - b.total);
+  const fastest = byTotal[0], slowest = byTotal[byTotal.length - 1];
+
+  // ---- Part 4: F2 vs time scatter + Pareto frontier ----
+  const p4 = new THREE.Group();
+  p4.position.y = P2_LIFT;
+  scene.add(p4);
+  addLogAxis(p4, SC_TOP + 0.1);
+  const yOf = (f2) => AXIS_Y + f2 * (SC_TOP - AXIS_Y);
+  [0, 0.5, 1].forEach((v) => {
+    const g = new THREE.Mesh(
+      new THREE.PlaneGeometry(L, 0.012),
+      new THREE.MeshBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.7, depthWrite: false })
+    );
+    g.position.set(AX0 + L / 2, yOf(v), -0.2);
+    p4.add(g);
+    const t = textSprite(v.toFixed(1), { height: 0.15, color: "#94a3b8" });
+    t.center.set(1, 0.5);
+    t.position.set(AX0 - 0.1, yOf(v), 0);
+    p4.add(t);
+  });
+  const yTitle = textSprite("F2 (higher = better)", { height: 0.14, color: "#64748b" });
+  yTitle.center.set(0, 0.5);
+  yTitle.position.set(AX0 - 0.1, SC_TOP + 0.28, 0);
+  p4.add(yTitle);
+  const xTitle = textSprite("total time, log scale (left = faster)", { height: 0.14, color: "#64748b" });
+  xTitle.center.set(0, 0.5);
+  xTitle.position.set(AX0, AXIS_Y - 0.5, 0);
+  p4.add(xTitle);
+
+  const front = paretoFront(rows.map((r) => ({ key: r.key, time: r.total, score: r.f2 })));
+  const onFront = new Set(front);
+  const dots = byTotal.map((r, order) => {
+    const px = tx(r.total), py = yOf(r.f2), fr = onFront.has(r.key);
+    const g = new THREE.Group();
+    g.position.set(px, py, 0.05);
+    const mat = new THREE.MeshPhongMaterial({ color: r.color, emissive: r.color, emissiveIntensity: fr ? 0.7 : 0.25, transparent: true, opacity: fr ? 1 : 0.55, shininess: 60 });
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(fr ? 0.1 : 0.075, 20, 14), mat));
+    const glow = glowSprite(fr ? FRONT_COL : r.color, fr ? 0.85 : 0.5, fr ? 1 : 0.6);
+    g.add(glow);
+    if (fr) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.012, 8, 40), new THREE.MeshBasicMaterial({ color: FRONT_COL, transparent: true, opacity: 0.95 }));
+      g.add(ring);
+    }
+    p4.add(g);
+    return { ...r, px, py, fr, g, order };
+  });
+  // labels: greedy placement over candidate offsets so close points (e.g. Linear/RBF, QSVC/Hybrid) don't collide
+  const LH = 0.15, LW = (txt) => Math.max(...txt.split("\n").map((l) => l.length)) * LH * 0.56;
+  const placed = [];
+  const hit = (a, b) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+  dots.forEach((d) => {
+    d.labelText = `${d.label}${d.fr ? "  ★" : ""}\nF2 ${d.f2.toFixed(3)} · ${fmtDuration(d.total)}`;
+    const w = LW(d.labelText), h = LH * 2.5;
+    const cands = [];
+    for (const dy of [0.3, -0.3, 0.68, -0.68, 1.06, -1.06]) for (const side of ["R", "L"]) cands.push({ dy, side });
+    let best = null;
+    for (const c of cands) {
+      const x0 = c.side === "R" ? d.px + 0.1 : d.px - 0.1 - w;
+      const box = { x0, x1: x0 + w, y0: d.py + c.dy - h / 2, y1: d.py + c.dy + h / 2 };
+      const ok = box.x0 >= AX0 - 0.05 && box.x1 <= AX1 + 0.35 && box.y1 <= SC_TOP + 0.45 && box.y0 >= AXIS_Y + 0.02
+        && !placed.some((p) => hit(box, p))
+        && !dots.some((o) => hit(box, { x0: o.px - 0.14, x1: o.px + 0.14, y0: o.py - 0.14, y1: o.py + 0.14 }));
+      if (ok) { best = { ...c, box }; break; }
+    }
+    if (!best) best = { dy: 0.3, side: "R", box: { x0: d.px, x1: d.px + w, y0: d.py, y1: d.py + h } };
+    placed.push(best.box);
+    const lab = textSprite(d.labelText, { height: LH, color: hex(d.color), align: best.side === "R" ? "left" : "right" });
+    lab.center.set(best.side === "R" ? 0 : 1, 0.5);
+    lab.position.set(best.side === "R" ? d.px + 0.1 : d.px - 0.1, d.py + best.dy, 0.05);
+    p4.add(lab);
+    d.lab = lab;
+    if (Math.abs(best.dy) > 0.4) { // thin leader line from the dot to its label
+      const ay = d.py + best.dy + (best.dy > 0 ? -LH * 1.3 : LH * 1.3);
+      const ax = best.side === "R" ? d.px + 0.1 : d.px - 0.1;
+      const lg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(d.px, d.py, 0.03), new THREE.Vector3(ax, ay, 0.03)]);
+      const ll = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: d.color, transparent: true, opacity: 0.6 }));
+      p4.add(ll);
+      d.leader = ll;
+    }
+  });
+  // frontier line (gold) connecting the Pareto-optimal models in time order
+  const frontDots = front.map((k) => dots.find((d) => d.key === k));
+  const lineMat = new THREE.MeshBasicMaterial({ color: FRONT_COL, transparent: true, opacity: 0.95 });
+  const segs = [];
+  for (let i = 0; i + 1 < frontDots.length; i++) {
+    const a = frontDots[i], b = frontDots[i + 1];
+    const len = Math.hypot(b.px - a.px, b.py - a.py);
+    const geo = new THREE.CylinderGeometry(0.018, 0.018, 1, 8);
+    geo.translate(0, 0.5, 0); // from base up
+    geo.rotateZ(-Math.PI / 2); // along +x
+    const m = new THREE.Mesh(geo, lineMat.clone());
+    m.position.set(a.px, a.py, 0.02);
+    m.rotation.z = Math.atan2(b.py - a.py, b.px - a.px);
+    m.scale.x = 0.001;
+    p4.add(m);
+    segs.push({ m, len });
+  }
+  const totalLen = segs.reduce((s, x) => s + x.len, 0);
+  setOpacity(p4, 0);
+
   // ======================= captions =======================
   const key = `<b style="color:${hex(GATE_COL.sx)}">sx</b> · <b style="color:${hex(GATE_COL.x)}">x</b> (pulses) · <b style="color:${hex(GATE_COL.rz)}">rz</b> (virtual) · <b style="color:${hex(GATE_COL.ecr)}">ECR</b> (2-qubit)`;
   const ops = q.fm_ops || {};
@@ -230,13 +427,26 @@ export default function createScene(ctx) {
     + `<div style="font-size:13px;color:#cbd5e1;margin-top:3px">${vqcLine} · at 3 qubits the laptop simulator wins; a QPU pays off only for circuits too large to simulate</div>`
     + `<div style="font-size:12px;color:#94a3b8;margin-top:2px">Live: the panel on the right can send this patient's kernel circuit to a real IBM QPU (it asks first)</div>`;
 
+  const ratioTT = slowest.total / fastest.total;
+  const nTest = test.length;
+  const capBarsRun = `<b>Every model's compute time</b> · measured on this laptop (train + inference) · <span style="color:#94a3b8">solid = training, light = inference · log scale</span>`;
+  const capBarsDone = `<b>Fastest: ${fastest.label}</b> ${fmtDuration(fastest.total)} · <b>slowest: ${slowest.label}</b> ${fmtDuration(slowest.total)} · the slowest takes <b>${fmtRatio(ratioTT)}</b> longer`
+    + `<div style="font-size:13px;color:#cbd5e1;margin-top:3px">The Hybrid's time includes QSVC's (${fmtDuration(tm.qsvc.total_s)}): it computes the QSVC kernel and then also fits the RBF SVM · all numbers measured on this CPU, not estimated</div>`;
+  const label = (k) => MODEL_LABELS[k];
+  const frontNames = front.map(label).join(" → ");
+  const dominated = rows.filter((r) => !onFront.has(r.key)).map((r) => r.label);
+  const capFrontRun = `<b>Efficiency frontier</b> · each dot: F2 on the ${nTest} test patients (up = better) vs total time (left = faster) · <span style="color:#fbbf24">gold = no other model is both faster and scores higher</span>`;
+  const capFrontDone = `<b>Frontier (Pareto-optimal): <span style="color:#fbbf24">${frontNames}</span></b>`
+    + (dominated.length ? ` · beaten on both axes: ${dominated.join(", ")}` : " · no model is beaten on both axes")
+    + `<div style="font-size:13px;color:#cbd5e1;margin-top:3px">Pick from the gold line: moving right costs time, and is worth it only if F2 rises</div>`;
+
   return {
     title: "Simulator → real QPU",
     legend: LEGEND_6,
     scene,
     cameraPos: [0, 0.45, 8.5],
     duration,
-    stops: [P1_STOP, RESULT_AT + 0.4],
+    stops: [P1_STOP, RESULT_AT + 0.4, P3_STOP, P4_STOP],
     update(t) {
       // ---------- part 1 ----------
       const out = 1 - ease(seg(t, P1_OUT0, P1_OUT1));
@@ -276,7 +486,7 @@ export default function createScene(ctx) {
       }
 
       // ---------- part 2 ----------
-      const inP2 = ease(seg(t, P2_IN0, P2_IN1));
+      const inP2 = ease(seg(t, P2_IN0, P2_IN1)) * (1 - ease(seg(t, P2_OUT0, P2_OUT1)));
       const p = seg(t, RACE0, RACE1);
       const T = lo * (hi / lo) ** p;
       if (inP2 > 0) {
@@ -300,7 +510,62 @@ export default function createScene(ctx) {
         p2.visible = false;
       }
 
+      // ---------- part 3: timing bars ----------
+      const inP3 = ease(seg(t, P3_IN0, P3_IN1)) * (1 - ease(seg(t, P3_OUT0, P3_OUT1)));
+      if (inP3 > 0) {
+        setOpacity(p3, inP3);
+        const pt = seg(t, TB0, TB1);
+        for (const b of tbars) {
+          const reach = pt * L; // clock position along the axis
+          const endTot = b.xTot - AX0, endTr = b.xTrain - AX0;
+          const trLen = Math.min(endTr, reach), totLen = Math.min(endTot, reach);
+          b.trainM.scale.x = Math.max(0.001, trLen);
+          b.infM.position.x = AX0 + trLen;
+          b.infM.scale.x = Math.max(0.001, totLen - trLen);
+          const doneAt = TB0 + b.f * (TB1 - TB0);
+          const fin = ease(seg(t, doneAt, doneAt + 0.25));
+          b.val.material.opacity = fin * inP3;
+          b.split.material.opacity = fin * inP3;
+          b.val.visible = b.split.visible = fin > 0.005;
+          const flash = t >= doneAt ? Math.max(0, 1 - (t - doneAt) / 0.8) : 0;
+          b.trainMat.emissiveIntensity = 0.3 + 0.6 * flash;
+        }
+        tclock.position.x = AX0 + pt * L;
+        tclock.visible = t >= TB0 && t < TB1 + 0.3;
+        tclock.material.opacity = 0.55 * (1 - seg(t, TB1, TB1 + 0.3)) * inP3;
+      } else {
+        p3.visible = false;
+      }
+
+      // ---------- part 4: efficiency frontier ----------
+      const inP4 = ease(seg(t, P4_IN0, P4_IN1));
+      if (inP4 > 0) {
+        setOpacity(p4, inP4);
+        const pulse = t >= LINE1 ? 0.5 + 0.5 * Math.sin((t - LINE1) * 3) : 0;
+        for (const d of dots) {
+          const a = ease(seg(t, DOT0 + d.order * DOT_STEP, DOT0 + d.order * DOT_STEP + DOT_FADE));
+          const s = (0.3 + 0.7 * a) * (d.fr ? 1 + 0.08 * pulse : 1);
+          d.g.scale.setScalar(s);
+          d.g.visible = a > 0.005;
+          d.lab.visible = a > 0.3;
+          if (d.leader) { d.leader.visible = a > 0.3; d.leader.material.opacity = 0.6 * Math.max(0, (a - 0.3) / 0.7) * inP4; }
+          d.lab.material.opacity = Math.max(0, (a - 0.3) / 0.7) * inP4;
+          d.g.traverse((o) => { if (o.material) o.material.opacity = (o.material.userData.baseOp ?? 1) * a * inP4; });
+        }
+        let drawn = ease(seg(t, LINE0, LINE1)) * totalLen;
+        for (const sg of segs) {
+          const l = Math.min(sg.len, Math.max(0, drawn));
+          drawn -= sg.len;
+          sg.m.scale.x = Math.max(0.001, l);
+          sg.m.visible = l > 0.002;
+        }
+      } else {
+        p4.visible = false;
+      }
+
       // ---------- caption ----------
+      if (t >= P3_OUT0 + 0.2) return t < P4_RESULT ? capFrontRun : capFrontDone;
+      if (t >= P3_IN0) return t < P3_RESULT ? capBarsRun : capBarsDone;
       if (t < SWEEP0) return capPart1a;
       if (t < SWEEP1) return capPart1b;
       if (t < P2_IN0) return capPart1c;
