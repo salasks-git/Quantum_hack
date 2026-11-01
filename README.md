@@ -43,14 +43,14 @@ $$\vec{x} \mapsto |\psi(\vec{x})\rangle = U_{\Phi}(\vec{x}) |0\rangle^{\otimes n
 
 | Model Type | Algorithm | Optimization / Method | Hilbert / Feature Space |
 | :--- | :--- | :--- | :--- |
-| **Quantum Kernel** | **QSVC** (`FidelityQuantumKernel`) | Dual convex quadratic program with Statevector Fidelity | $2^n$-dimensional complex projective Hilbert space |
+| **Quantum Kernel** | **QSVC** (`FidelityStatevectorKernel`) | Dual convex quadratic program with exact statevector fidelity, bandwidth-scaled inputs | $2^n$-dimensional complex projective Hilbert space |
 | **Variational Quantum** | **VQC** | `RealAmplitudes` ansatz ($R_y$ + CNOT) optimized via `COBYLA` | Parameterized Quantum Circuit (PQC) |
 | **Classical Baseline** | **Linear SVM** | $L_2$-regularized linear separating hyperplane | Compressed $\mathbb{R}^n$ PCA feature space |
 | **Classical Baseline** | **RBF Kernel SVM** | Radial Basis Function $\exp(-\gamma \|\vec{x} - \vec{x}'\|^2)$ | Infinite-dimensional Reproducing Kernel Hilbert Space (RKHS) |
 
 #### Quantum Kernel Evaluation:
-$$K(\vec{x}_i, \vec{x}_j) = |\langle \psi(\vec{x}_i) | \psi(\vec{x}_j) \rangle|^2$$
-Computed via the `ComputeUncompute` fidelity primitive with `StatevectorSampler`.
+$$K(\vec{x}_i, \vec{x}_j) = |\langle \psi(s\vec{x}_i) | \psi(s\vec{x}_j) \rangle|^2$$
+Computed exactly (no shot noise) with `FidelityStatevectorKernel`. The **bandwidth** $s$ (sidebar option 7, default `0.1`) scales the angles fed to the quantum kernel only (classical baselines and VQC see the raw angles). With $s = 1$ the full $[0, \pi]$ range makes the kernel near-identity, so QSVC memorizes. Scaling it down (Shaydulin & Wild, *Phys. Rev. A* 106, 042407, 2022) raised 5-fold CV accuracy on all five datasets in our tests (e.g. Vertebral Column 0.66 → 0.78, Breast Cancer ROC-AUC 0.705 → 0.938; 100 patients, 4 qubits, ZZ reps=2).
 
 ---
 
@@ -70,7 +70,7 @@ All datasets are automatically cleaned, labeled into standardized binary targets
 
 ## 🖥️ Streamlit Interactive UI Overview
 
-Launch the diagnostic dashboard (`streamlit run app.py`) to explore five specialized modules:
+Launch the diagnostic dashboard (`streamlit run app.py`) to explore seven specialized modules:
 
 1. **📊 Tab 1 — Dataset & Quantum Preprocessing:**
    - Raw data inspection, class distribution metrics, and cumulative explained variance ratios.
@@ -95,6 +95,12 @@ Launch the diagnostic dashboard (`streamlit run app.py`) to explore five special
    - Real-time inference sliders, one per qubit. Each slider is a compressed PCA summary score mapped to a rotation angle — **not** a raw clinical value such as blood pressure or glucose.
    - **Load patient** dropdown fills the sliders from a real held-out test patient and shows their true diagnosis.
    - Live side-by-side disease prediction and confidence metrics between **QSVC** and **Classical RBF SVM**.
+7. **🎚️ Tab 7 — Kernel Bandwidth Lab:**
+   - Gram-matrix heatmaps at three bandwidths (too sharp / your setting / too blurred), patients sorted by diagnosis.
+   - Stratified 5-fold CV sweep of QSVC over $s \in \{0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1\}$: accuracy, ROC-AUC (from the SVM margin), and recall, with the classical RBF SVM as a reference line. Preprocessing is refit inside every fold.
+   - Kernel diagnostics vs $s$: off-diagonal mean/variance (concentration) and centered kernel-target alignment.
+
+**Sidebar options:** dataset, cohort size, qubits, feature map, circuit depth, entanglement, **quantum kernel bandwidth $s$**, VQC iterations. Every option that affects training is part of the training cache key.
 
 ---
 
@@ -192,6 +198,7 @@ Quantum_hack/
 │   ├── circuits.py            # Feature map (ZZ / Pauli) and RealAmplitudes ansatz builders
 │   ├── models.py              # Trains & times Linear SVM, RBF SVM, QSVC, VQC
 │   ├── metrics.py             # Benchmark and timing tables
+│   ├── bandwidth.py           # Kernel bandwidth CV sweep + kernel diagnostics
 │   └── ui/                    # Streamlit UI
 │       ├── sidebar.py         # Settings panel → PipelineConfig
 │       ├── plots.py           # All matplotlib/seaborn figures
@@ -199,7 +206,9 @@ Quantum_hack/
 │       ├── tab_circuits.py    # Tab 2
 │       ├── tab_benchmarks.py  # Tab 3
 │       ├── tab_profiler.py    # Tab 4
-│       └── tab_simulator.py   # Tab 5
+│       ├── tab_ibm_hardware.py # Tab 5
+│       ├── tab_simulator.py   # Tab 6
+│       └── tab_bandwidth.py   # Tab 7: Kernel Bandwidth Lab
 ├── data/                      # Cleaned clinical benchmark datasets
 │   ├── breast_cancer_wisconsin.csv
 │   ├── diabetes_pima.csv
@@ -269,13 +278,19 @@ results = train_all_models(
     feature_map=build_feature_map("ZZFeatureMap", 3, reps=2, entanglement="linear"),
     ansatz=build_ansatz(3, reps=2, entanglement="linear"),
     vqc_iter=35,
+    kernel_bandwidth=0.1,   # QSVC only; 1.0 = unscaled feature map
 )
 print(benchmark_table(results, d.y_test))
+
+# Bandwidth sweep (5-fold CV) without the UI
+from qmed.bandwidth import bandwidth_sweep
+sweep = bandwidth_sweep(DATASETS["Statlog Heart Disease (Cardiology)"], 100, 3, "ZZFeatureMap", 2, "linear")
+print(sweep.table, sweep.rbf)
 ```
 
 ### Known limitations
 
-- **Quantum models are seeded and repeatable.** QSVC and VQC use `seed=42` (sampler shots and VQC start weights), so retraining gives identical scores. The Streamlit settings that match the 3D tour are 3 qubits, 100 patients, ZZFeatureMap, reps 2, linear entanglement, 35 VQC iterations. Classical baselines are deterministic (`random_state=42`).
+- **Quantum models are repeatable.** QSVC uses the exact statevector kernel, so it is deterministic. VQC uses `seed=42` (sampler shots and start weights), so retraining gives identical scores. Classical baselines are deterministic (`random_state=42`). The Streamlit settings that match the 3D tour are 3 qubits, 100 patients, ZZFeatureMap, reps 2, linear entanglement, 35 VQC iterations, kernel bandwidth s = 1.0 (the tour export uses the unscaled kernel; the app defaults to s = 0.1).
 - **Simulated, not real hardware.** All circuits run on a local statevector simulator; cost grows as $2^n$, which is why qubits are capped at 4.
 
 ---

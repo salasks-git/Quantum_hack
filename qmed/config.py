@@ -50,6 +50,12 @@ FEATURE_MAP_PAULI = "PauliFeatureMap (Z, YY, ZX)"
 FEATURE_MAP_OPTIONS = [FEATURE_MAP_ZZ, FEATURE_MAP_PAULI]
 ENTANGLEMENT_OPTIONS = ["linear", "full", "circular"]
 
+# Quantum kernel bandwidth s: QSVC encodes s * angles instead of the raw [0, pi]
+# angles. Small s widens the kernel (Shaydulin & Wild 2022); s = 1 is the unscaled map.
+BANDWIDTH_OPTIONS = [0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0]
+DEFAULT_BANDWIDTH = 0.1
+CV_FOLDS = 5
+
 # Model names double as result-dict keys and table labels.
 LINEAR_SVM = "Classical SVM (Linear)"
 RBF_SVM = "Classical SVM (RBF)"

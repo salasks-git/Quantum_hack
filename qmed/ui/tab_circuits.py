@@ -19,7 +19,8 @@ def render(cfg: PipelineConfig, feature_map, ansatz, results: dict) -> None:
     st.divider()
     k1, k2 = st.columns(2)
     with k1:
-        st.markdown("**Quantum Kernel Matrix $K(\\vec{x}_i, \\vec{x}_j) = |\\langle \\psi(\\vec{x}_i) | \\psi(\\vec{x}_j) \\rangle|^2$**")
+        st.markdown("**Quantum Kernel Matrix $K(\\vec{x}_i, \\vec{x}_j) = |\\langle \\psi(s\\vec{x}_i) | \\psi(s\\vec{x}_j) \\rangle|^2$**")
+        st.caption(f"Exact statevector fidelities at bandwidth s = {cfg.kernel_bandwidth:g} (see the Kernel Bandwidth Lab tab).")
         plots.show(plots.kernel_heatmap(results[QSVC_MODEL]["kernel_matrix"]))
     with k2:
         st.markdown("**VQC Training Convergence (COBYLA Loss Curve)**")
