@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import "./style.css";
-import { loadIndex, loadDisease } from "./data.js";
+import { loadIndex, loadDisease, loadFixture, FIXTURE_SLUG } from "./data.js";
 import { SceneManager } from "./sceneManager.js";
 import { mountDatasetExplorer } from "./datasetExplorer.js";
 import { renderLegend, mountLegendToggle } from "./legend.js";
@@ -30,6 +30,7 @@ controls.autoRotate = true;
 controls.autoRotateSpeed = 1.0; // time-based (r160): ~0.105 rad/s; SceneManager sways it within +-0.5 rad
 const manager = new SceneManager(renderer, camera, controls);
 const pauseAt = parseFloat(params.get("pauseAt")); // rehearsal/debug: auto-pause at scene time N
+const fixture = params.get("fixture"); // dev/test: q2 | q4 = 2/4-qubit fixture for vertebral_column
 
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
@@ -66,7 +67,7 @@ function rebuild() {
   manager.show(STEP_FACTORIES[state.step - 1], { data: state.data, patient: state.patient });
   updateLegend();
   document.querySelectorAll(".dot").forEach((d) => d.classList.toggle("active", +d.dataset.step === state.step));
-  history.replaceState(null, "", `?disease=${state.slug}&patient=${state.patient}&step=${state.step}`);
+  history.replaceState(null, "", `?disease=${state.slug}&patient=${state.patient}&step=${state.step}${fixture ? `&fixture=${fixture}` : ""}`);
 }
 
 function fillPatients() {
@@ -84,7 +85,7 @@ function fillPatients() {
 
 async function selectDisease(slug) {
   try {
-    const data = await loadDisease(slug);
+    const data = fixture && slug === FIXTURE_SLUG ? await loadFixture(fixture) : await loadDisease(slug);
     clearError();
     state.slug = slug;
     state.data = data;
@@ -182,7 +183,7 @@ async function init() {
     o.textContent = `${d.label} (${d.n_features} features)`;
     sel.appendChild(o);
   });
-  const slug = params.get("disease") || state.index[0].slug;
+  const slug = params.get("disease") || (fixture ? FIXTURE_SLUG : state.index[0].slug);
   if (![...sel.options].some((o) => o.value === slug)) {
     const o = document.createElement("option");
     o.value = slug; o.textContent = slug; sel.appendChild(o);

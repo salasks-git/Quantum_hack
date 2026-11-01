@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import { LEGEND_1 } from "./legends.js";
+import { legend1 } from "./legends.js";
 import {
   PALETTE, ease, seg, blochSphere, firstLayerState, textSprite, glowSprite,
-  setOpacity, disposeTree, addLights,
+  setOpacity, disposeTree, addLights, rowLayout, xName,
 } from "./common.js";
 
 export const duration = 10;
@@ -23,9 +23,9 @@ const BASE_Y = -0.95; // bar baseline
 const H0 = 1.55; // world units per height unit (shrunk per patient if a bar would crowd the frame)
 const MAX_BAR_TOP = 1.7; // tallest standardised bar may reach this y
 const LABEL_CEIL = 2.65; // labels never extend above this y
-const QX = [-2.5, 0, 2.5]; // qubit positions
+const QGAP = 2.5; // qubit spacing for <= 3 qubits (4 qubits: row shrunk to the 3-qubit width)
 const QY = 0.6;
-const SUB = ["₁", "₂", "₃"];
+const R0 = 0.95; // Bloch sphere radius at scale 1
 
 const fmt = (v) => {
   const a = Math.abs(v);
@@ -45,6 +45,8 @@ export default function createScene(ctx) {
   const p = data.test[ctx.patient];
   const names = data.feature_names;
   const N = names.length;
+  const nQ = p.angles.length; // qubits: 2, 3 or 4
+  const { xs: QX, scale: QS } = rowLayout(nQ, QGAP, R0);
   const scene = new THREE.Scene();
   addLights(scene);
 
@@ -121,7 +123,7 @@ export default function createScene(ctx) {
   const CENTER = new THREE.Vector3(0, QY, 0);
   const orbs = p.pca.map((v, k) => {
     const g = new THREE.Group();
-    const r = 0.2 + 0.5 * (Math.abs(v) / maxPca);
+    const r = (0.2 + 0.5 * (Math.abs(v) / maxPca)) * QS;
     const ball = new THREE.Mesh(
       new THREE.SphereGeometry(r, 32, 24),
       new THREE.MeshStandardMaterial({
@@ -130,8 +132,8 @@ export default function createScene(ctx) {
       })
     );
     g.add(ball, glowSprite(PALETTE.quantum, r * 4.2, 0.9));
-    const lab = textSprite(`PC${k + 1} = ${n2(v)}`, { height: 0.2, color: "#ddd6fe" });
-    lab.position.y = -r - 0.32;
+    const lab = textSprite(`PC${k + 1} = ${n2(v)}`, { height: 0.2 * QS, color: "#ddd6fe" });
+    lab.position.y = -r - 0.32 * QS;
     g.add(lab);
     g.visible = false;
     scene.add(g);
@@ -139,17 +141,17 @@ export default function createScene(ctx) {
   });
 
   // ---------- Bloch spheres ----------
-  const R = 0.95;
+  const R = R0 * QS;
   const qubits = p.angles.map((a, k) => {
     const g = new THREE.Group();
     g.position.set(QX[k], QY, 0);
     const b = blochSphere(R);
     g.add(b);
-    const ket = textSprite("|0⟩", { height: 0.2, color: "#f0abfc" });
-    ket.position.y = R + 0.28;
+    const ket = textSprite("|0⟩", { height: 0.2 * QS, color: "#f0abfc" });
+    ket.position.y = R + 0.28 * QS;
     g.add(ket);
-    const lab = textSprite(`qubit ${k + 1} · x${SUB[k]} = ${n2(a)}`, { height: 0.19, color: "#e9d5ff" });
-    lab.position.y = -R - 0.32;
+    const lab = textSprite(`qubit ${k + 1} · ${xName(k)} = ${n2(a)}`, { height: 0.19 * QS, color: "#e9d5ff" });
+    lab.position.y = -R - 0.32 * QS;
     g.add(lab);
     // phase wedge in the equatorial plane, swept from phi = 0 to phi = 2*angle
     const phiEnd = firstLayerState(a).phi;
@@ -177,18 +179,18 @@ export default function createScene(ctx) {
   });
   const top = names.reduce((b, _, i) => (Math.abs(p.standardized[i]) > Math.abs(p.standardized[b]) ? i : b), 0);
   const pcs = p.pca.map((v, k) => `PC${k + 1} ${n2(v)}`).join(" · ");
-  const xs = p.angles.map((a, k) => `x${SUB[k]} = ${n2(a)}`).join(", ");
+  const xs = p.angles.map((a, k) => `${xName(k)} = ${n2(a)}`).join(", ");
   const cap = {
     raw: `<b>1 · Patient record</b> · ${N} raw measurements on very different scales — largest: <b>${pretty(names[iMax])} = ${fmt(p.raw[iMax])}</b>, smallest: ${pretty(names[iMin])} = ${fmt(p.raw[iMin])}`,
     std: `<b>2 · Standardise</b> · all ${N} measurements rescaled by the training patients' mean and spread (0σ = typical) · most unusual: <b>${pretty(names[top])} ${sgn(p.standardized[top])}σ</b>`,
-    pca: `<b>3 · Compress (PCA)</b> · ${N} measurements squeezed into 3 principal components: <b>${pcs}</b> (orb size = |value|)`,
+    pca: `<b>3 · Compress (PCA)</b> · ${N} measurements squeezed into ${nQ} principal components: <b>${pcs}</b> (orb size = |value|)`,
     enc: `<b>4 · Encode</b> · each component becomes a qubit angle: <b>${xs}</b> rad · Hadamard tips |0⟩ to the equator, then a phase turn of 2x · <i>first encoding layer only; later layers entangle the qubits</i>`,
   };
 
   const tmp = new THREE.Vector3();
   return {
     title: "Patient becomes qubits",
-    legend: LEGEND_1,
+    legend: legend1(nQ),
     scene,
     cameraPos: [0, 2.1, 6.6],
     duration,

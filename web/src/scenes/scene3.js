@@ -1,7 +1,8 @@
 import * as THREE from "three";
-import { LEGEND_3 } from "./legends.js";
+import { legend3 } from "./legends.js";
 import {
   PALETTE, ease, seg, blochSphere, firstLayerState, textSprite, glowSprite, setOpacity, disposeTree, addLights,
+  rowLayout, pos3,
 } from "./common.js";
 import { verdictFor } from "../verdict.js";
 
@@ -23,9 +24,9 @@ const T = {
 
 const S = 0.9; // world units per radian in the web
 const WEB_Y = 0.5;
-const COLS = [-1.9, 0, 1.9];
+const COL_GAP = 1.9; // sphere spacing for <= 3 qubits (4 qubits: row shrunk to the 3-qubit width)
 const ROWS = [1.3, -0.55];
-const R = 0.62;
+const R0 = 0.62;
 const hex = (c) => "#" + c.toString(16).padStart(6, "0");
 const n3 = (v) => v.toFixed(3);
 const pct = (p) => {
@@ -51,6 +52,10 @@ export default function createScene(ctx) {
   const tAngles = data.train.angles;
   const tLabels = data.train.labels;
   const nTrain = tAngles.length;
+  const nQ = p.angles.length; // qubits: 2, 3 or 4
+  const flat = nQ === 2;
+  const { xs: COLS, scale: QS } = rowLayout(nQ, COL_GAP, R0);
+  const R = R0 * QS;
   const scene = new THREE.Scene();
   addLights(scene);
 
@@ -66,8 +71,8 @@ export default function createScene(ctx) {
       b.position.set(COLS[k], ROWS[r], 0);
       pair.add(b);
       if (r === 0) {
-        const q = textSprite(`qubit ${k + 1}`, { height: 0.15, color: "#c4b5fd" });
-        q.position.set(COLS[k], ROWS[0] + R + 0.22, 0);
+        const q = textSprite(`qubit ${k + 1}`, { height: 0.15 * QS, color: "#c4b5fd" });
+        q.position.set(COLS[k], ROWS[0] + R + 0.22 * QS, 0);
         pair.add(q);
       }
       return { b, a };
@@ -92,15 +97,19 @@ export default function createScene(ctx) {
   const web = new THREE.Group();
   web.position.y = WEB_Y;
   scene.add(web);
-  const toPos = (a) => new THREE.Vector3((a[0] - Math.PI / 2) * S, (a[1] - Math.PI / 2) * S, (a[2] - Math.PI / 2) * S);
+  // drawn position = the first <= 3 angles (2 qubits: z = 0, flat; 4 qubits: x₄ dropped). K always uses all qubits.
+  const toPos = (angles) => { const a = pos3(angles); return new THREE.Vector3((a[0] - Math.PI / 2) * S, (a[1] - Math.PI / 2) * S, (a[2] - Math.PI / 2) * S); };
 
   const box = new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(Math.PI * S, Math.PI * S, Math.PI * S)),
+    new THREE.EdgesGeometry(flat ? new THREE.PlaneGeometry(Math.PI * S, Math.PI * S) : new THREE.BoxGeometry(Math.PI * S, Math.PI * S, Math.PI * S)),
     new THREE.LineBasicMaterial({ color: PALETTE.quantum, transparent: true, opacity: 0.18 })
   );
   web.add(box);
   const h = (Math.PI * S) / 2;
-  [["x₁", [h + 0.25, -h, -h]], ["x₂", [-h, h + 0.22, -h]], ["x₃", [-h - 0.2, -h, h + 0.25]]].forEach(([t, xyz]) => {
+  (flat
+    ? [["x₁", [h + 0.25, -h, 0]], ["x₂", [-h, h + 0.22, 0]]]
+    : [["x₁", [h + 0.25, -h, -h]], ["x₂", [-h, h + 0.22, -h]], ["x₃", [-h - 0.2, -h, h + 0.25]]]
+  ).forEach(([t, xyz]) => {
     const s = textSprite(t, { height: 0.18, color: "#a78bfa" });
     s.material.sizeAttenuation = false; // same on-screen size at the front and back of the box
     s.scale.multiplyScalar(0.034 / s.scale.y);
@@ -195,7 +204,9 @@ export default function createScene(ctx) {
   const cap = {
     pairA: `<b>Quantum similarity</b> · your patient #${pi} vs training patient #${match}, the most similar of ${nTrain} · comparing their encoded states… · ${firstLayer}`,
     pairB: `<b>Quantum similarity</b> · your patient #${pi} vs training patient #${match}, the most similar of ${nTrain} · K = |⟨ψ<sub>${pi}</sub>|ψ<sub>${match}</sub>⟩|² = <b>${n3(K)}</b> · #${match}'s actual diagnosis: <b>${lab(matchSick)}</b> · ${firstLayer}`,
-    web: `<b>The quantum kernel web</b> · ${nTrain} training patients placed by their 3 qubit angles (${okSpan("healthy")} / ${sickSpan("disease")}) · each is joined to its 3 most similar · brighter thread = higher K`,
+    web: `<b>The quantum kernel web</b> · ${nTrain} training patients placed by their ${
+      flat ? "2 qubit angles on a flat plane (2 qubits → 2D)" : nQ > 3 ? `first 3 of ${nQ} qubit angles (x₄ isn't drawn; K uses all ${nQ} qubits)` : "3 qubit angles"
+    } (${okSpan("healthy")} / ${sickSpan("disease")}) · each is joined to its 3 most similar · brighter thread = higher K`,
     you: `<b>Your patient #${pi}</b> (white) joins the web · its 5 most similar training patients: K = ${near.map((j) => n3(kTest[j])).join(", ")} (${nearSick} ${sickSpan("disease")}, ${5 - nearSick} ${okSpan("healthy")})`,
     verdict: `<b>QSVC verdict: ${v.disease ? sickSpan("DISEASE") : okSpan("HEALTHY")}</b> · disease probability <b>${pct(p.models.qsvc.prob)}%</b>${
       v.borderline ? " · <b>borderline</b>: the probability estimate and the decision disagree; the verdict follows the decision" : ""
@@ -204,7 +215,7 @@ export default function createScene(ctx) {
 
   return {
     title: "QSVC quantum similarity",
-    legend: LEGEND_3,
+    legend: legend3(nQ),
     scene,
     cameraPos: [0, 1.5, 7.2],
     duration,
