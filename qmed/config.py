@@ -55,10 +55,12 @@ LINEAR_SVM = "Classical SVM (Linear)"
 RBF_SVM = "Classical SVM (RBF)"
 QSVC_MODEL = "Quantum Kernel SVM (QSVC)"
 VQC_MODEL = "Variational Quantum (VQC)"
+HYBRID_ENSEMBLE = "Hybrid Ensemble (QSVC + RBF)"
 
 MODEL_COMPLEXITY = {
     LINEAR_SVM: "O(N_train · d)",
     RBF_SVM: "O(N_train² · d)",
     QSVC_MODEL: "O(N_train² · 2ⁿ)",
     VQC_MODEL: "O(N_train · Iters · Depth)",
+    HYBRID_ENSEMBLE: "O(N_train² · (d + 2ⁿ))",
 }

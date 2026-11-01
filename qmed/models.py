@@ -15,7 +15,23 @@ except ImportError:
     from qiskit_algorithms.optimizers import COBYLA
     from qiskit_algorithms.state_fidelities import ComputeUncompute
 
-from qmed.config import LINEAR_SVM, QSVC_MODEL, RANDOM_STATE, RBF_SVM, VQC_MODEL
+from qmed.config import HYBRID_ENSEMBLE, LINEAR_SVM, QSVC_MODEL, RANDOM_STATE, RBF_SVM, VQC_MODEL
+
+
+class HybridEnsembleModel:
+    """Ensemble model blending Classical RBF SVM and Quantum Kernel QSVC probabilities."""
+    def __init__(self, rbf_model, qsvc_model):
+        self.rbf = rbf_model
+        self.qsvc = qsvc_model
+
+    def predict_proba(self, X):
+        p_rbf = np.asarray(self.rbf.predict_proba(X))
+        p_qsvc = np.asarray(self.qsvc.predict_proba(X))
+        return 0.5 * p_rbf + 0.5 * p_qsvc
+
+    def predict(self, X):
+        prob = self.predict_proba(X)[:, 1]
+        return (prob >= 0.5).astype(int)
 
 
 def fit_and_evaluate(model, X_train, y_train, X_test) -> dict:
@@ -70,5 +86,22 @@ def train_all_models(X_train_q, y_train, X_test_q, feature_map, ansatz, vqc_iter
     )
     results[VQC_MODEL] = fit_and_evaluate(vqc, X_train_q, y_train, X_test_q)
     results[VQC_MODEL]["loss_history"] = loss_history
+
+    # 5. Hybrid Quantum-Classical Ensemble (QSVC + RBF Soft Voting)
+    prob_rbf = results[RBF_SVM]["prob"]
+    prob_qsvc = results[QSVC_MODEL]["prob"]
+    prob_ens = 0.5 * prob_rbf + 0.5 * prob_qsvc
+    pred_ens = (prob_ens >= 0.5).astype(int)
+    t_train_ens = results[RBF_SVM]["train_time"] + results[QSVC_MODEL]["train_time"]
+    t_inf_ens = results[RBF_SVM]["inf_time"] + results[QSVC_MODEL]["inf_time"]
+
+    results[HYBRID_ENSEMBLE] = {
+        "model": HybridEnsembleModel(results[RBF_SVM]["model"], results[QSVC_MODEL]["model"]),
+        "pred": pred_ens,
+        "prob": prob_ens,
+        "train_time": t_train_ens,
+        "inf_time": t_inf_ens,
+        "total_time": t_train_ens + t_inf_ens,
+    }
 
     return results

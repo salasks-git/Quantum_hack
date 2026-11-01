@@ -2,7 +2,7 @@
 import numpy as np
 import streamlit as st
 
-from qmed.config import QSVC_MODEL, RBF_SVM
+from qmed.config import HYBRID_ENSEMBLE, QSVC_MODEL, RBF_SVM
 from qmed.data import PreparedData
 from qmed.ui.sidebar import PipelineConfig
 
@@ -48,8 +48,11 @@ def render(cfg: PipelineConfig, data: PreparedData, results: dict) -> None:
             ))
 
     patient_vec = np.array([angles])
-    rcol1, rcol2 = st.columns(2)
+    rcol1, rcol2, rcol3 = st.columns(3)
     with rcol1:
         _diagnosis_metric("Quantum Kernel (QSVC) Diagnosis", results[QSVC_MODEL]["model"], patient_vec)
     with rcol2:
         _diagnosis_metric("Classical RBF SVM Diagnosis", results[RBF_SVM]["model"], patient_vec)
+    with rcol3:
+        if HYBRID_ENSEMBLE in results:
+            _diagnosis_metric("🧬 Hybrid Ensemble Diagnosis", results[HYBRID_ENSEMBLE]["model"], patient_vec)

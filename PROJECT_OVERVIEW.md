@@ -79,6 +79,7 @@ This creates complex entanglement trajectories across the Bloch sphere using thr
 | **Classical Baseline** | **RBF Kernel SVM** | Infinite-dimensional RKHS | $f(\vec{x}) = \text{sign}\left(\sum_{i=1}^N \alpha_i y_i \exp(-\gamma \|\vec{x} - \vec{x}_i\|^2) + b\right)$ |
 | **Quantum Kernel** | **QSVC** | $2^n$-dimensional Complex Projective Hilbert Space | $f(\vec{x}) = \text{sign}\left(\sum_{i=1}^N \alpha_i y_i |\langle \psi(\vec{x}_i) \| \psi(\vec{x}) \rangle|^2 + b\right)$ |
 | **Variational Quantum** | **VQC** | Parameterized Quantum Circuit (PQC) | $\hat{y} = \text{argmax}_k \langle \psi(\vec{x}, \vec{\theta}) \| \hat{M}_k \| \psi(\vec{x}, \vec{\theta}) \rangle$ |
+| **Hybrid Ensemble** | **QSVC + RBF Soft Voting** | Composite Geometry (Euclidean + Hilbert Space) | $P_{\text{ens}}(y=1 \mid \vec{x}) = \frac{1}{2} P_{\text{RBF}}(y=1 \mid \vec{x}) + \frac{1}{2} P_{\text{QSVC}}(y=1 \mid \vec{x})$ |
 
 #### Quantum Kernel SVM (QSVC) Mechanism
 Rather than computing geometric distances in Euclidean space, QSVC computes the **quantum state fidelity** (transition probability) between patient states:
@@ -93,6 +94,14 @@ $$|\psi(\vec{x}, \vec{\theta})\rangle = W(\vec{\theta}) U_{\Phi}(\vec{x}) |0\ran
 where $W(\vec{\theta})$ is the `RealAmplitudes` ansatz consisting of alternating layers of parameterized $Y$-rotations $R_y(\theta)$ and entangling CNOT gates.
 The weights $\vec{\theta}$ are optimized iteratively using **COBYLA** (Constrained Optimization BY Linear Approximation) to minimize cross-entropy loss:
 $$\mathcal{L}(\vec{\theta}) = - \frac{1}{N} \sum_{i=1}^N \sum_{k=0}^1 y_{ik} \log P(y=k \mid \vec{x}_i, \vec{\theta})$$
+
+#### Hybrid Quantum-Classical Ensemble Mechanism
+The Hybrid Ensemble unites the local metric smoothness of classical RBF kernels with the non-local phase interference of quantum Hilbert space kernels:
+- **Classical RBF:** Operates via isotropic Euclidean distance $d_E(\vec{x}, \vec{x}') = \|\vec{x} - \vec{x}'\|_2$, providing robust density estimation and high precision when patients occupy tight local clusters.
+- **Quantum QSVC:** Operates via non-local inner products in $2^n$-dimensional Hilbert space $|\langle \psi(\vec{x}) | \psi(\vec{x}') \rangle|^2$, capturing subtle non-linear cross-biomarker correlations and yielding superior sensitivity (Recall) on atypical presentations.
+- **Decision Fusion:** By calibrating prediction probabilities through Platt scaling and computing their soft-consensus average:
+  $$\hat{y}_{\text{hybrid}} = \mathbb{I}\left[\frac{1}{2} P_{\text{RBF}}(y=1 \mid \vec{x}) + \frac{1}{2} P_{\text{QSVC}}(y=1 \mid \vec{x}) \ge 0.5\right]$$
+  the system achieves superior clinical $F_2$-scores by reducing dangerous false negatives without incurring false positive inflation.
 
 ---
 

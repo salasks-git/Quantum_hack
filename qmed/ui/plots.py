@@ -58,8 +58,9 @@ def confusion_heatmap(y_true, y_pred, title: str):
 def total_time_bars(results: dict):
     names = list(results.keys())
     totals = [results[m]["total_time"] for m in names]
+    colors = ["#2563eb", "#0284c7", "#7c3aed", "#d946ef", "#10b981"]
     fig, ax = plt.subplots(figsize=(6, 3.8))
-    bars = ax.barh(names, totals, color=["#2563eb", "#0284c7", "#7c3aed", "#d946ef"], edgecolor="black", alpha=0.85)
+    bars = ax.barh(names, totals, color=colors[:len(names)], edgecolor="black", alpha=0.85)
     ax.set_xlabel("Total Execution Time (Seconds)")
     ax.set_title("End-to-End Wall-Clock Latency (Train + Test)")
     for bar in bars:
