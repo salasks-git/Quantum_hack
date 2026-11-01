@@ -29,3 +29,27 @@ button:hover,select:hover{border-color:var(--accent)}
 .lg-dot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid #fff4}
 #legend-btn.on{background:var(--accent);color:#070b16;border-color:var(--accent)}
 @media (max-width:899px){#legend{display:none}}
+/* --- All patients overlay (Task 17) --- */
+#allpatients{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:6;width:min(1240px,calc(100% - 24px));max-height:calc(100% - 24px);display:flex;flex-direction:column;background:rgba(7,11,22,.97);border:1px solid #2a3350;border-radius:10px;font-size:12px}
+#allpatients[hidden]{display:none}
+.ap-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid #1e293b}
+.ap-title{font-weight:700;font-size:14px;color:var(--accent)}
+.ap-close{padding:2px 9px}
+.ap-body{overflow:auto;padding:0 8px 8px}
+.ap-table{width:100%;border-collapse:collapse}
+.ap-table th,.ap-table td{padding:4px 8px;text-align:left;white-space:nowrap;border-bottom:1px solid #1e293b}
+.ap-table thead th{position:sticky;top:0;background:#0e1426;color:var(--muted);font-weight:600;z-index:1}
+.ap-table tbody tr{cursor:pointer}
+.ap-table tbody tr:hover{background:rgba(167,139,250,.12)}
+.ap-table tbody tr.cur{background:rgba(167,139,250,.28);outline:1px solid var(--accent)}
+.ap-table tfoot td{position:sticky;bottom:0;background:#0e1426;font-weight:600;border-top:2px solid #2a3350;line-height:1.5}
+.ap-chip{display:inline-block;min-width:62px;text-align:center;font-size:10px;font-weight:700;border-radius:999px;padding:1px 7px}
+.ap-chip.sick{background:rgba(251,113,133,.2);color:#fb7185}
+.ap-chip.well{background:rgba(74,222,128,.2);color:#4ade80}
+.ap-act.sick{color:#fb7185;font-weight:600}.ap-act.well{color:#4ade80;font-weight:600}
+.ap-prob{color:var(--muted)}
+.ap-ok{color:#4ade80;font-weight:700}.ap-bad{color:#fb7185;font-weight:700}
+.ap-warn{color:#fbbf24;cursor:help}
+#all-btn.on{background:var(--accent);color:#070b16;border-color:var(--accent)}
+@media (max-width:899px){#allpatients{width:100%;top:0;left:0;transform:none;max-height:100%;border-radius:0}}
+/* --- end All patients overlay --- */
