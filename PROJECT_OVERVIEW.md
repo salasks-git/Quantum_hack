@@ -20,6 +20,7 @@ Modern clinical diagnosis relies heavily on high-dimensional biomedical measurem
 4. **Fidelity-Based Quantum Kernel Geometry:** QSVC computes inner products directly in a $2^n$-dimensional complex projective Hilbert space using Qiskit's `ComputeUncompute` state fidelity primitive.
 5. **Interactive Real-Time Diagnostic Simulator:** Clinicians can load genuine held-out test patients or manipulate quantum rotation angles in real time to observe live classification discrepancies between Quantum Kernels and Classical SVMs.
 6. **Hardware Latency & Profiling Engine:** Distinguishes classical simulation overhead ($O(N^2 \cdot 2^n)$ matrix operations) from physical quantum speedup potential ($O(1)$ native gate evolution on superconducting QPUs).
+7. **Theoretical & Mathematical Foundation:** Accompanied by [`RESEARCH_AND_THEORY.md`](RESEARCH_AND_THEORY.md), a comprehensive theoretical compendium detailing Hilbert space vs. Euclidean RBF geometry, XOR/parity phase interference, feature map taxonomy, hybrid soft-voting ensembles, and neural network insulation against NISQ hardware noise.
 
 ---
 

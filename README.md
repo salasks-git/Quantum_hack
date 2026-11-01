@@ -22,6 +22,10 @@
 
 The platform implements a complete 3-stage quantum preprocessing pipeline, parameterizable quantum circuits (Feature Maps & Variational Ansätze), fidelity-based quantum kernels, and a real-time clinical inference simulator.
 
+> 📚 **Deep-Dive Documentation:**
+> - [🔬 **Theoretical & Empirical Research Compendium** (`RESEARCH_AND_THEORY.md`)](RESEARCH_AND_THEORY.md) — Comprehensive guide on Hilbert space vs. Euclidean RBF geometry, XOR/parity quantum phase interference, feature map taxonomy, hybrid ensembles, and classical neural network insulation against NISQ hardware noise.
+> - [🏛️ **Project Overview & Architectural Runbook** (`PROJECT_OVERVIEW.md`)](PROJECT_OVERVIEW.md) — Full codebase architecture, pipeline mechanics, and step-by-step module reference.
+
 ---
 
 ## 🔬 Mathematical & Architectural Framework
