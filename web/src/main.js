@@ -4,9 +4,10 @@ import "./style.css";
 import { loadIndex, loadDisease } from "./data.js";
 import { SceneManager } from "./sceneManager.js";
 import { makePlaceholder } from "./scenes/placeholder.js";
+import scene1 from "./scenes/scene1.js";
 
 // Replace entries with real scene factories as they are built.
-const STEP_FACTORIES = [1, 2, 3, 4, 5].map((n) => makePlaceholder(n));
+const STEP_FACTORIES = [scene1, makePlaceholder(2), makePlaceholder(3), makePlaceholder(4), makePlaceholder(5)];
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
